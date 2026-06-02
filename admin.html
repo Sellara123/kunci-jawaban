@@ -555,6 +555,36 @@
             try { if (!firebase.apps.length) firebase.initializeApp(config); auth = firebase.auth(); db = firebase.firestore(); return true; } catch(e) { return false; }
         }
 
+// Cek koneksi Firebase
+async function checkFirebaseConnection() {
+    try {
+        if (!auth || !db) {
+            throw new Error('Firebase belum diinisialisasi');
+        }
+        
+        // Test baca data
+        await db.collection('settings').limit(1).get();
+        console.log('✅ Firebase terhubung');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Firebase connection error:', error);
+        Swal.fire({
+            title: 'Koneksi Firebase Gagal',
+            text: 'Periksa konfigurasi Firebase Anda. Pastikan Firestore sudah diaktifkan.',
+            icon: 'error',
+            confirmButtonText: 'Coba Lagi'
+        }).then(() => {
+            window.location.href = 'setup-env.html';
+        });
+        return false;
+    }
+}
+
+// Panggil di dalam checkAuth() setelah user login
+// Tambahkan baris ini di dalam checkAuth() setelah currentUser = user:
+// await checkFirebaseConnection();
+
         async function checkAuth() {
             auth.onAuthStateChanged(async (user) => {
                 if (!user) { window.location.href = 'index.html'; return; }
@@ -596,20 +626,61 @@
         }
 
         async function loadUsers() {
-            const usersSnap = await db.collection('users').get();
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = '';
-            usersSnap.forEach(doc => {
-                const user = doc.data();
-                const row = tbody.insertRow();
-                row.insertCell(0).innerHTML = user.email;
-                row.insertCell(1).innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : user.role === 'guru' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${user.role}</span>`;
-                row.insertCell(2).innerHTML = user.banned ? '<span class="text-red-600">Diblokir</span>' : '<span class="text-emerald-600">Aktif</span>';
-                row.insertCell(3).innerHTML = `<button onclick="banUser('${doc.id}')" class="text-red-500 mr-2 hover:text-red-700"><i class="fas fa-ban"></i></button><button onclick="deleteUser('${doc.id}')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-trash-alt"></i></button>`;
-            });
-            if (usersTable) usersTable.destroy();
-            usersTable = $('#usersTable').DataTable({ pageLength: 10, language: { search: "Cari:", lengthMenu: "Tampilkan _MENU_ data", info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data" } });
+    try {
+        // Pastikan db sudah siap
+        if (!db) {
+            console.error('Firestore belum siap');
+            return;
         }
+        
+        const usersSnap = await db.collection('users').get();
+        const tbody = document.getElementById('usersTableBody');
+        
+        if (!tbody) {
+            console.error('Element usersTableBody tidak ditemukan');
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (usersSnap.empty) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400">Belum ada user</td></tr>';
+            return;
+        }
+        
+        usersSnap.forEach(doc => {
+            const user = doc.data();
+            const row = tbody.insertRow();
+            row.insertCell(0).innerHTML = user.email || '-';
+            row.insertCell(1).innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : user.role === 'guru' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${user.role || 'user'}</span>`;
+            row.insertCell(2).innerHTML = user.banned ? '<span class="text-red-600">Diblokir</span>' : '<span class="text-emerald-600">Aktif</span>';
+            row.insertCell(3).innerHTML = `
+                <button onclick="banUser('${doc.id}')" class="text-red-500 mr-2 hover:text-red-700"><i class="fas fa-ban"></i></button>
+                <button onclick="deleteUser('${doc.id}')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-trash-alt"></i></button>
+            `;
+        });
+        
+        // Hancurkan DataTable lama jika ada
+        if (usersTable) {
+            usersTable.destroy();
+        }
+        
+        // Inisialisasi DataTable baru
+        usersTable = $('#usersTable').DataTable({ 
+            pageLength: 10, 
+            language: { 
+                search: "Cari:", 
+                lengthMenu: "Tampilkan _MENU_ data", 
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                emptyTable: "Tidak ada data user"
+            } 
+        });
+        
+    } catch (error) {
+        console.error('Error loadUsers:', error);
+        Swal.fire('Error', 'Gagal memuat data user: ' + error.message, 'error');
+    }
+}
 
         async function loadQuestions() {
             const questionsSnap = await db.collection('questions').orderBy('nomor').get();
@@ -703,20 +774,112 @@
         }
 
         async function saveUser() {
-            const email = document.getElementById('userEmail').value;
-            const password = document.getElementById('userPassword').value;
-            const role = document.getElementById('userRole').value;
-            if (!email || !password) { Swal.fire('Error', 'Email dan password harus diisi', 'error'); return; }
-            try {
-                const userCred = await auth.createUserWithEmailAndPassword(email, password);
-                await db.collection('users').doc(userCred.user.uid).set({ email, role, createdAt: new Date(), banned: false });
-                await db.collection('logs').add({ userId: currentUser.uid, action: 'create_user', target: email, timestamp: new Date() });
-                Swal.fire('Sukses', 'User berhasil ditambahkan', 'success');
-                closeModal('userModal');
-                loadUsers();
-            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+    const email = document.getElementById('userEmail').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const role = document.getElementById('userRole').value;
+    
+    // Validasi input
+    if (!email) {
+        Swal.fire('Error', 'Email harus diisi', 'error');
+        return;
+    }
+    if (!password) {
+        Swal.fire('Error', 'Password harus diisi', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        Swal.fire('Error', 'Password minimal 6 karakter', 'error');
+        return;
+    }
+    
+    // Validasi format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        Swal.fire('Error', 'Format email tidak valid', 'error');
+        return;
+    }
+    
+    // Tampilkan loading
+    Swal.fire({
+        title: 'Membuat user...',
+        text: 'Harap tunggu',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+    
+    try {
+        // Cek apakah Firebase auth sudah siap
+        if (!auth) {
+            throw new Error('Firebase Auth belum siap');
         }
-
+        
+        // Cek apakah user sudah login sebagai admin
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            throw new Error('Anda belum login, silakan refresh halaman');
+        }
+        
+        // Buat user di Authentication
+        const userCred = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Simpan ke Firestore
+        await db.collection('users').doc(userCred.user.uid).set({
+            email: email,
+            role: role,
+            createdAt: new Date(),
+            banned: false,
+            createdBy: currentUser.uid
+        });
+        
+        // Catat log
+        await db.collection('logs').add({
+            userId: currentUser.uid,
+            email: currentUser.email,
+            action: 'create_user',
+            target: email,
+            targetRole: role,
+            timestamp: new Date()
+        });
+        
+        Swal.fire('Sukses', `User ${email} berhasil ditambahkan sebagai ${role}`, 'success');
+        closeModal('userModal');
+        
+        // Reset form
+        document.getElementById('userEmail').value = '';
+        document.getElementById('userPassword').value = '';
+        
+        // Reload tabel user
+        await loadUsers();
+        
+    } catch (error) {
+        console.error('Error detail:', error);
+        
+        let errorMessage = error.message;
+        
+        // Terjemahkan error code ke Bahasa Indonesia
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage = 'Email sudah terdaftar. Gunakan email lain.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = 'Format email tidak valid.';
+                break;
+            case 'auth/weak-password':
+                errorMessage = 'Password terlalu lemah. Gunakan minimal 6 karakter.';
+                break;
+            case 'auth/network-request-failed':
+                errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
+                break;
+            case 'auth/internal-error':
+                errorMessage = 'Terjadi kesalahan internal. Coba lagi nanti.';
+                break;
+            default:
+                errorMessage = error.message;
+        }
+        
+        Swal.fire('Error', errorMessage, 'error');
+    }
+}
         async function banUser(userId) {
             const result = await Swal.fire({ title: 'Ban User?', text: 'User tidak akan bisa login', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
             if (result.isConfirmed) { await db.collection('users').doc(userId).update({ banned: true }); Swal.fire('Sukses', 'User telah diblokir', 'success'); loadUsers(); }
