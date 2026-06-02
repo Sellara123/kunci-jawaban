@@ -1,62 +1,50 @@
-// env-loader.js
-// Load environment variables from .env file (hanya untuk development)
-// Untuk production, gunakan backend API proxy
+// env-loader.js — PSAS System
+// Utility untuk load konfigurasi Firebase dari storage
 
 class EnvLoader {
     constructor() {
-        this.config = null;
+        this._config = null;
     }
 
-    async loadEnv() {
-        if (this.config) return this.config;
-        
+    getConfig() {
+        if (this._config) return this._config;
+
+        // Prioritas 1: sessionStorage (sesi aktif)
+        let raw = sessionStorage.getItem('psas_firebase_config');
+        // Prioritas 2: localStorage (permanen)
+        if (!raw) raw = localStorage.getItem('psas_firebase_config');
+        // Prioritas 3: window._env_ (inject dari server)
+        if (!raw && window._env_?.FIREBASE_CONFIG) {
+            this._config = window._env_.FIREBASE_CONFIG;
+            return this._config;
+        }
+
+        if (!raw) return null;
+
         try {
-            // Untuk production, sebaiknya config disimpan di backend
-            // dan diambil via API dengan autentikasi khusus
-            
-            // Cara 1: Dari file .env (development only)
-            // Cara 2: Dari sessionStorage yang sudah di-set oleh admin saat setup
-            // Cara 3: Dari backend API endpoint yang aman
-            
-            const envFromStorage = sessionStorage.getItem('psas_firebase_config');
-            if (envFromStorage) {
-                this.config = JSON.parse(envFromStorage);
-                return this.config;
-            }
-            
-            // Fallback: Baca dari window.env (jika di-inject dari server)
-            if (window._env_ && window._env_.FIREBASE_CONFIG) {
-                this.config = window._env_.FIREBASE_CONFIG;
-                return this.config;
-            }
-            
-            throw new Error('Konfigurasi Firebase tidak ditemukan');
-            
-        } catch (error) {
-            console.error('Gagal load environment:', error);
+            const parsed = JSON.parse(atob(raw));
+            this._config = {
+                apiKey:            parsed.apiKey            || parsed.VITE_FIREBASE_API_KEY,
+                authDomain:        parsed.authDomain        || parsed.VITE_FIREBASE_AUTH_DOMAIN,
+                projectId:         parsed.projectId         || parsed.VITE_FIREBASE_PROJECT_ID,
+                storageBucket:     parsed.storageBucket     || parsed.VITE_FIREBASE_STORAGE_BUCKET,
+                messagingSenderId: parsed.messagingSenderId || parsed.VITE_FIREBASE_MESSAGING_SENDER_ID,
+                appId:             parsed.appId             || parsed.VITE_FIREBASE_APP_ID,
+            };
+            return this._config;
+        } catch (e) {
+            console.error('[EnvLoader] Gagal parse config:', e);
             return null;
         }
     }
-    
-    getConfig() {
-        return this.config;
-    }
-    
-    async getFirebaseConfig() {
-        const config = await this.loadEnv();
-        if (!config) return null;
-        
-        return {
-            apiKey: config.apiKey || config.VITE_FIREBASE_API_KEY,
-            authDomain: config.authDomain || config.VITE_FIREBASE_AUTH_DOMAIN,
-            projectId: config.projectId || config.VITE_FIREBASE_PROJECT_ID,
-            storageBucket: config.storageBucket || config.VITE_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: config.messagingSenderId || config.VITE_FIREBASE_MESSAGING_SENDER_ID,
-            appId: config.appId || config.VITE_FIREBASE_APP_ID
-        };
+
+    clear() {
+        this._config = null;
+        localStorage.removeItem('psas_firebase_config');
+        sessionStorage.removeItem('psas_firebase_config');
     }
 }
 
-// Singleton instance
+// Singleton
 const envLoader = new EnvLoader();
 window.envLoader = envLoader;
