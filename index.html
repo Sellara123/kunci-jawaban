@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PSAS Preview System</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        .toast-notif {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+        /* Dark Mode */
+        body.dark-mode {
+            background: #1a1a2e;
+            color: #eee;
+        }
+        body.dark-mode .bg-white {
+            background: #16213e;
+            color: #eee;
+        }
+        body.dark-mode .border {
+            border-color: #2d3748;
+        }
+        body.dark-mode .bg-gray-100 {
+            background: #0f0f1a;
+        }
+        body.dark-mode .bg-gray-50 {
+            background: #1a1a2e;
+        }
+        body.dark-mode .text-gray-600, 
+        body.dark-mode .text-gray-700,
+        body.dark-mode .text-gray-800 {
+            color: #ccc;
+        }
+        /* Modal Rules */
+        .modal-rules {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .animate-slide {
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .nav-active {
+            background: #e0e7ff;
+            color: #1e40af;
+        }
+        .question-card {
+            transition: all 0.2s ease;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- ==================== MODAL PERATURAN ==================== -->
+<div id="rulesModal" class="modal-rules">
+    <div class="bg-white rounded-2xl max-w-2xl mx-4 p-8 shadow-2xl animate-slide">
+        <div class="text-center mb-6">
+            <i class="fas fa-shield-alt text-6xl text-red-600 mb-4"></i>
+            <h2 class="text-2xl font-bold text-gray-800">Peraturan dan Kerahasiaan Sistem</h2>
+            <div class="h-1 w-20 bg-red-600 mx-auto mt-2 rounded"></div>
+        </div>
+        <div class="space-y-3 text-gray-700 mb-8 max-h-96 overflow-y-auto">
+            <p><i class="fas fa-check-circle text-green-600 mr-2"></i> Soal merupakan dokumen akademik.</p>
+            <p><i class="fas fa-ban text-red-600 mr-2"></i> Dilarang menyebarluaskan isi soal.</p>
+            <p><i class="fas fa-money-bill-wave text-red-600 mr-2"></i> Dilarang memperjualbelikan isi soal.</p>
+            <p><i class="fas fa-database text-red-600 mr-2"></i> Dilarang melakukan pengambilan data tanpa izin.</p>
+            <p><i class="fas fa-camera text-red-600 mr-2"></i> Dilarang membagikan screenshot.</p>
+            <p><i class="fas fa-video text-red-600 mr-2"></i> Dilarang membagikan rekaman layar.</p>
+            <p><i class="fas fa-gavel text-red-600 mr-2"></i> Pelanggaran dapat menyebabkan akun diblokir permanen.</p>
+            <p><i class="fas fa-user-graduate text-blue-600 mr-2"></i> Pengguna wajib menjaga literasi digital dan etika penggunaan sistem.</p>
+        </div>
+        <button onclick="acceptRules()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition">
+            <i class="fas fa-check-circle mr-2"></i> Saya Mengerti
+        </button>
+    </div>
+</div>
+
+<!-- ==================== LOADING ==================== -->
+<div id="loadingScreen" class="fixed inset-0 bg-white/90 z-50 hidden items-center justify-center">
+    <div class="text-center">
+        <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
+        <p>Memuat sistem...</p>
+    </div>
+</div>
+
+<!-- ==================== PAGE LOGIN ==================== -->
+<div id="loginPage" class="page">
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 to-purple-900">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center">
+                <i class="fas fa-graduation-cap text-5xl text-white mb-2"></i>
+                <h2 class="text-2xl font-bold text-white">PSAS Preview System</h2>
+                <p class="text-blue-100 text-sm">Silahkan login untuk melanjutkan</p>
+            </div>
+            <div class="p-8">
+                <div class="mb-6">
+                    <div class="flex space-x-2">
+                        <button onclick="setRole('admin')" id="btnAdmin" class="flex-1 py-2 rounded-lg transition-all role-btn bg-gray-200 text-gray-700">Admin</button>
+                        <button onclick="setRole('guru')" id="btnGuru" class="flex-1 py-2 rounded-lg transition-all role-btn bg-gray-200 text-gray-700">Guru</button>
+                        <button onclick="setRole('user')" id="btnUser" class="flex-1 py-2 rounded-lg transition-all role-btn bg-blue-600 text-white">User</button>
+                    </div>
+                    <input type="hidden" id="selectedRole" value="user">
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2 text-sm font-semibold">Email</label>
+                        <input type="email" id="loginEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2 text-sm font-semibold">Password</label>
+                        <input type="password" id="loginPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button onclick="doLogin()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                </div>
+                <div class="mt-6 text-center text-xs text-gray-500">
+                    <i class="fas fa-shield-alt mr-1"></i> Sistem dilindungi keamanan tingkat tinggi
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== PAGE USER DASHBOARD ==================== -->
+<div id="userPage" class="page">
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center flex-wrap">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-eye text-2xl"></i>
+                <span class="font-bold text-xl">PSAS Preview</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-white/20">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <span id="userEmailDisplay" class="text-sm hidden md:inline"></span>
+                <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded-lg text-sm hover:bg-red-700">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4"><i class="fas fa-calendar-alt mr-2 text-blue-600"></i>Jadwal Ujian</h2>
+            <div id="scheduleList" class="space-y-2"></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold mb-4"><i class="fas fa-book mr-2 text-green-600"></i>Daftar Mapel Aktif</h2>
+            <div id="subjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== PAGE GURU DASHBOARD ==================== -->
+<div id="guruPage" class="page">
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-chalkboard-teacher text-2xl"></i>
+                <span class="font-bold text-xl">PSAS Guru Panel</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-white/20">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <span id="guruEmailDisplay" class="text-sm hidden md:inline"></span>
+                <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded-lg text-sm hover:bg-red-700">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold mb-4"><i class="fas fa-question-circle mr-2 text-blue-600"></i>Preview Soal (Guru) - Jawaban Terlihat</h2>
+            <div id="guruQuestionsList" class="space-y-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL PREVIEW SOAL ==================== -->
+<div id="previewModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white rounded-xl p-6 w-full max-w-3xl my-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="previewTitle" class="text-xl font-bold">Preview Soal</h3>
+            <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div id="previewContent" class="space-y-4 max-h-96 overflow-y-auto"></div>
+    </div>
+</div>
+
+<script>
+    // ==================== GLOBAL VARIABLES ====================
+    let auth = null, db = null;
+    let currentUser = null, currentRole = null;
+    let selectedRole = 'user';
+    
+    /// ==================== FIREBASE INIT DENGAN ENV ====================
+// Konfigurasi Firebase diambil dari sessionStorage (disimpan saat setup)
+// Tidak ada hardcode config di kode!
+
+function getFirebaseConfig() {
+    // Prioritas 1: Dari sessionStorage (untuk sesi saat ini)
+    let configFromStorage = sessionStorage.getItem('psas_firebase_config');
+    
+    // Prioritas 2: Dari localStorage (permanen)
+    if (!configFromStorage) {
+        configFromStorage = localStorage.getItem('psas_firebase_config');
+    }
+    
+    if (configFromStorage) {
+        try {
+            return JSON.parse(atob(configFromStorage));
+        } catch(e) {
+            console.error('Gagal decrypt config');
+        }
+    }
+    
+    // Prioritas 3: Dari window._env_ (jika diinject server)
+    if (window._env_ && window._env_.FIREBASE_CONFIG) {
+        return window._env_.FIREBASE_CONFIG;
+    }
+    
+    // Jika tidak ada config sama sekali, arahkan ke halaman setup
+    Swal.fire({
+        title: 'Konfigurasi Firebase Belum Diatur',
+        text: 'Silakan lakukan setup konfigurasi Firebase terlebih dahulu',
+        icon: 'info',
+        confirmButtonText: 'Setup Sekarang'
+    }).then(() => {
+        window.location.href = 'setup-env.html';
+    });
+    
+    return null;
+}
+
+function initFirebase() {
+    const config = getFirebaseConfig();
+    if (!config) return false;
+    
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(config);
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+        return true;
+    } catch(e) {
+        console.error("Firebase init error:", e);
+        Swal.fire('Error', 'Gagal menginisialisasi Firebase. Periksa konfigurasi Anda.', 'error');
+        return false;
+    }
+}
+    
+    // ==================== KEAMANAN ====================
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('copy', e => e.preventDefault());
+    document.addEventListener('cut', e => e.preventDefault());
+    document.addEventListener('paste', e => e.preventDefault());
+    document.addEventListener('dragstart', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+            (e.ctrlKey && e.shiftKey && e.key === 'J') || (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            Swal.fire('Peringatan!', 'Akses tidak diizinkan', 'warning');
+        }
+    });
+    
+    // Deteksi DevTools
+    setInterval(() => {
+        const start = performance.now();
+        debugger;
+        const end = performance.now();
+        if (end - start > 100) {
+            Swal.fire('Peringatan!', 'Developer Tools terdeteksi!', 'warning');
+        }
+    }, 5000);
+    
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+    }
+    
+function acceptRules() {
+    sessionStorage.setItem('psas_rules_accepted', 'true');
+    document.getElementById('rulesModal').style.display = 'none';
+    
+    // Cek apakah sudah ada konfigurasi Firebase
+    const hasConfig = localStorage.getItem('psas_firebase_config') || sessionStorage.getItem('psas_firebase_config');
+    if (!hasConfig) {
+        window.location.href = 'setup-env.html';
+    } else {
+        showLoginPage();
+    }
+}
+    
+    // ==================== PAGE NAVIGATION ====================
+    function showLoginPage() {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('loginPage').classList.add('active');
+    }
+    
+    function showUserPage() {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('userPage').classList.add('active');
+        loadUserDashboard();
+    }
+    
+    function showGuruPage() {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('guruPage').classList.add('active');
+        loadGuruDashboard();
+    }
+    
+    // ==================== LOGIN ====================
+    function setRole(role) {
+        selectedRole = role;
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        const btnMap = { admin: 'btnAdmin', guru: 'btnGuru', user: 'btnUser' };
+        document.getElementById(btnMap[role]).classList.remove('bg-gray-200', 'text-gray-700');
+        document.getElementById(btnMap[role]).classList.add('bg-blue-600', 'text-white');
+        document.getElementById('selectedRole').value = role;
+    }
+    
+    async function doLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const role = selectedRole;
+        
+        if (!email || !password) {
+            Swal.fire('Error', 'Email dan password harus diisi', 'error');
+            return;
+        }
+        
+        try {
+            const userCred = await auth.signInWithEmailAndPassword(email, password);
+            const userDoc = await db.collection('users').doc(userCred.user.uid).get();
+            
+            if (!userDoc.exists) {
+                await auth.signOut();
+                Swal.fire('Error', 'Akun tidak terdaftar', 'error');
+                return;
+            }
+            
+            const userRole = userDoc.data().role;
+            if (userRole !== role) {
+                await auth.signOut();
+                Swal.fire('Error', `Akun ini bukan sebagai ${role}`, 'error');
+                return;
+            }
+            
+            if (userDoc.data().banned) {
+                await auth.signOut();
+                Swal.fire('Akses Ditolak', 'Akun Anda telah diblokir', 'error');
+                return;
+            }
+            
+            currentUser = userCred.user;
+            currentRole = userRole;
+            
+            // Catat log
+            const fingerprint = btoa(navigator.userAgent + screen.width + screen.height);
+            await db.collection('logs').add({
+                userId: currentUser.uid,
+                email: email,
+                action: 'login',
+                role: userRole,
+                fingerprint: fingerprint,
+                timestamp: new Date()
+            });
+            
+            // Arahkan ke halaman sesuai role
+            if (userRole === 'admin') {
+                window.location.href = 'admin.html';
+            } else if (userRole === 'guru') {
+                showGuruPage();
+            } else {
+                showUserPage();
+            }
+            
+        } catch (error) {
+            Swal.fire('Login Gagal', error.message, 'error');
+        }
+    }
+    
+    async function logout() {
+        await auth.signOut();
+        sessionStorage.clear();
+        currentUser = null;
+        currentRole = null;
+        showLoginPage();
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+    }
+    
+    // ==================== USER DASHBOARD ====================
+    async function loadUserDashboard() {
+        if (!currentUser) return;
+        document.getElementById('userEmailDisplay').innerText = currentUser.email;
+        
+        // Load jadwal
+        const questions = await db.collection('questions').where('aktif', '==', true).get();
+        const schedules = new Map();
+        questions.forEach(doc => {
+            const q = doc.data();
+            const key = `${q.hari}_${q.mapel}_${q.kelas}`;
+            if (!schedules.has(key)) {
+                schedules.set(key, { hari: q.hari, mapel: q.mapel, kelas: q.kelas });
+            }
+        });
+        
+        const scheduleContainer = document.getElementById('scheduleList');
+        scheduleContainer.innerHTML = '';
+        for (const [_, schedule] of schedules) {
+            scheduleContainer.innerHTML += `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div><span class="font-semibold">${schedule.hari}</span> - ${schedule.mapel} <span class="text-gray-500">(Kelas ${schedule.kelas})</span></div>
+                    <button onclick="previewQuestions('${schedule.mapel}', '${schedule.kelas}')" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-sm">Preview</button>
+                </div>
+            `;
+        }
+        
+        // Load mapel aktif dengan batasan
+        const settings = await db.collection('settings').doc('general').get();
+        const maxSubjects = settings.exists ? settings.data().maxSubjectsPerDay || 4 : 4;
+        
+        const subjects = new Map();
+        questions.forEach(doc => {
+            const q = doc.data();
+            if (!subjects.has(q.mapel)) {
+                subjects.set(q.mapel, { mapel: q.mapel, kelas: q.kelas, count: 0 });
+            }
+            subjects.get(q.mapel).count++;
+        });
+        
+        const subjectsContainer = document.getElementById('subjectsList');
+        subjectsContainer.innerHTML = '';
+        let i = 0;
+        for (const [_, subject] of subjects) {
+            if (i >= maxSubjects) break;
+            subjectsContainer.innerHTML += `
+                <div class="border rounded-lg p-4 hover:shadow-lg transition question-card">
+                    <div class="flex justify-between items-center">
+                        <div><h3 class="font-bold">${subject.mapel}</h3><p class="text-gray-600 text-sm">Kelas ${subject.kelas}</p><p class="text-xs text-gray-400">${subject.count} soal</p></div>
+                        <button onclick="previewQuestions('${subject.mapel}', '${subject.kelas}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">Preview</button>
+                    </div>
+                </div>
+            `;
+            i++;
+        }
+    }
+    
+    async function previewQuestions(mapel, kelas) {
+        const questions = await db.collection('questions')
+            .where('mapel', '==', mapel)
+            .where('kelas', '==', kelas)
+            .where('aktif', '==', true)
+            .orderBy('nomor')
+            .get();
+        
+        if (questions.empty) {
+            Swal.fire('Info', 'Belum ada soal untuk mapel ini', 'info');
+            return;
+        }
+        
+        document.getElementById('previewTitle').innerHTML = `Preview Soal - ${mapel} (Kelas ${kelas})`;
+        let content = '';
+        questions.forEach(doc => {
+            const q = doc.data();
+            content += `
+                <div class="border-b pb-4 mb-4">
+                    <div class="font-bold mb-2">Soal No. ${q.nomor}</div>
+                    <div class="mb-3">${q.text}</div>
+                    <div class="text-sm text-gray-600 mb-2">
+                        <span class="px-2 py-1 bg-gray-200 rounded">${q.type === 'pilihan_ganda' ? 'Pilihan Ganda' : 'Pilih Lebih Dari 1 Jawaban'}</span>
+                    </div>
+                    <div class="space-y-1 ml-4">
+                        <div>A. ${q.pilihan?.A || '-'}</div>
+                        <div>B. ${q.pilihan?.B || '-'}</div>
+                        <div>C. ${q.pilihan?.C || '-'}</div>
+                        <div>D. ${q.pilihan?.D || '-'}</div>
+                        <div>E. ${q.pilihan?.E || '-'}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        document.getElementById('previewContent').innerHTML = content;
+        document.getElementById('previewModal').classList.remove('hidden');
+        document.getElementById('previewModal').classList.add('flex');
+    }
+    
+    // ==================== GURU DASHBOARD ====================
+    async function loadGuruDashboard() {
+        if (!currentUser) return;
+        document.getElementById('guruEmailDisplay').innerText = currentUser.email;
+        
+        const questions = await db.collection('questions')
+            .where('aktif', '==', true)
+            .orderBy('mapel')
+            .orderBy('nomor')
+            .get();
+        
+        const container = document.getElementById('guruQuestionsList');
+        container.innerHTML = '';
+        
+        questions.forEach(doc => {
+            const q = doc.data();
+            container.innerHTML += `
+                <div class="border rounded-lg p-4 question-card">
+                    <div class="flex justify-between items-start flex-wrap gap-2">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${q.mapel}</span>
+                                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">Kelas ${q.kelas}</span>
+                                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">No.${q.nomor}</span>
+                                <span class="text-xs ${q.type === 'pilihan_ganda' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'} px-2 py-1 rounded">${q.type === 'pilihan_ganda' ? 'Pilgan' : 'Multi Jawaban'}</span>
+                            </div>
+                            <div class="mt-2 font-medium">${q.text}</div>
+                            <div class="mt-3 ml-4 space-y-1 text-sm">
+                                <div>A. ${q.pilihan?.A || '-'}</div>
+                                <div>B. ${q.pilihan?.B || '-'}</div>
+                                <div>C. ${q.pilihan?.C || '-'}</div>
+                                <div>D. ${q.pilihan?.D || '-'}</div>
+                                <div>E. ${q.pilihan?.E || '-'}</div>
+                            </div>
+                            <div class="mt-3 text-sm text-green-700 bg-green-50 p-2 rounded">
+                                <i class="fas fa-key mr-1"></i> Jawaban Benar: ${q.jawaban?.join(', ') || '-'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (questions.empty) {
+            container.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada soal yang tersedia</div>';
+        }
+    }
+    
+    function closePreviewModal() {
+        document.getElementById('previewModal').classList.add('hidden');
+        document.getElementById('previewModal').classList.remove('flex');
+    }
+    
+    // ==================== INISIALISASI ====================
+    function checkRulesAndStart() {
+        const rulesAccepted = sessionStorage.getItem('psas_rules_accepted');
+        if (rulesAccepted === 'true') {
+            document.getElementById('rulesModal').style.display = 'none';
+            showLoginPage();
+        }
+    }
+    
+    // Start aplikasi
+    if (initFirebase()) {
+        checkRulesAndStart();
+    } else {
+        Swal.fire('Error', 'Gagal menginisialisasi Firebase. Hubungi administrator.', 'error');
+    }
+</script>
+</body>
+</html>
