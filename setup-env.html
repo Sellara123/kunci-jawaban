@@ -3,124 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Environment - PSAS System</title>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Setup Firebase - PSAS System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { user-select: none; }
-        body { font-family: system-ui, -apple-system, sans-serif; }
+        * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); min-height: 100vh; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-field {
+            width: 100%; padding: 10px 14px; border-radius: 10px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0; font-size: 13px; font-family: 'Courier New', monospace;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus { outline: none; border-color: #818cf8; background: rgba(255,255,255,0.1); }
+        .input-field::placeholder { color: rgba(255,255,255,0.3); }
+        .label { display: block; font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .btn-submit {
+            width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white; font-weight: 700; font-size: 15px;
+            transition: all 0.2s; box-shadow: 0 4px 20px rgba(79,70,229,0.4);
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(79,70,229,0.5); }
+        @media (max-width: 640px) { .card-padding { padding: 24px 20px; } }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 to-purple-900 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
-        <div class="text-center mb-6">
-            <i class="fas fa-database text-6xl text-blue-600 mb-4"></i>
-            <h1 class="text-2xl font-bold text-gray-800">Setup Environment Firebase</h1>
-            <p class="text-gray-600 mt-2">Konfigurasi ini hanya dilakukan <span class="text-red-600 font-bold">SEKALI</span> oleh Admin</p>
-            <p class="text-gray-500 text-sm mt-1">Data akan tersimpan aman di sessionStorage dan tidak terlihat user biasa</p>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="glass rounded-2xl w-full max-w-lg card-padding p-8">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-indigo-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
+                <i class="fas fa-fire text-indigo-400 text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Setup Firebase</h1>
+            <p class="text-slate-400 text-sm mt-2">Konfigurasi ini cukup dilakukan <span class="text-amber-400 font-semibold">sekali</span> oleh Admin</p>
         </div>
-        
-        <form id="setupEnvForm" class="space-y-4">
+
+        <div class="space-y-4" id="setupForm">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">API Key <span class="text-red-500">*</span></label>
-                <input type="text" id="apiKey" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
-                <p class="text-xs text-gray-500 mt-1">Dapatkan dari Firebase Console > Project Settings > General</p>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Auth Domain <span class="text-red-500">*</span></label>
-                <input type="text" id="authDomain" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <label class="label">API Key *</label>
+                <input type="text" id="apiKey" class="input-field" placeholder="AIzaSy...">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Project ID <span class="text-red-500">*</span></label>
-                <input type="text" id="projectId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <label class="label">Auth Domain *</label>
+                <input type="text" id="authDomain" class="input-field" placeholder="project-id.firebaseapp.com">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Storage Bucket <span class="text-red-500">*</span></label>
-                <input type="text" id="storageBucket" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <label class="label">Project ID *</label>
+                <input type="text" id="projectId" class="input-field" placeholder="my-project-id">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Messaging Sender ID <span class="text-red-500">*</span></label>
-                <input type="text" id="messagingSenderId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <label class="label">Storage Bucket *</label>
+                <input type="text" id="storageBucket" class="input-field" placeholder="project-id.appspot.com">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">App ID <span class="text-red-500">*</span></label>
-                <input type="text" id="appId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <label class="label">Messaging Sender ID *</label>
+                <input type="text" id="messagingSenderId" class="input-field" placeholder="123456789">
             </div>
-            
-            <div class="border-t pt-4 mt-4">
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                    <p class="text-sm text-yellow-800">
-                        <i class="fas fa-shield-alt mr-2"></i>
-                        <strong>Keamanan:</strong> Data konfigurasi akan disimpan di sessionStorage dan hanya dapat diakses oleh admin. User biasa tidak bisa melihat konfigurasi ini.
-                    </p>
-                </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition">
-                    <i class="fas fa-save mr-2"></i> Simpan Konfigurasi & Lanjutkan
-                </button>
+            <div>
+                <label class="label">App ID *</label>
+                <input type="text" id="appId" class="input-field" placeholder="1:123456789:web:abc123">
             </div>
-        </form>
+
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mt-2">
+                <p class="text-amber-300 text-xs leading-relaxed">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Konfigurasi dienkripsi dan disimpan di localStorage. Dapatkan nilai-nilai ini dari <strong>Firebase Console → Project Settings → General → Your Apps</strong>.
+                </p>
+            </div>
+
+            <button class="btn-submit mt-2" onclick="saveConfig()">
+                <i class="fas fa-save mr-2"></i> Simpan & Lanjutkan
+            </button>
+        </div>
     </div>
 
     <script>
-        document.getElementById('setupEnvForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const config = {
-                apiKey: document.getElementById('apiKey').value.trim(),
-                authDomain: document.getElementById('authDomain').value.trim(),
-                projectId: document.getElementById('projectId').value.trim(),
-                storageBucket: document.getElementById('storageBucket').value.trim(),
-                messagingSenderId: document.getElementById('messagingSenderId').value.trim(),
-                appId: document.getElementById('appId').value.trim()
-            };
-            
-            // Validasi sederhana
+        function saveConfig() {
+            const fields = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+            const config = {};
+            for (const f of fields) {
+                const val = document.getElementById(f).value.trim();
+                if (!val) { Swal.fire({ icon:'warning', title:'Lengkapi Semua Field', text:`Field "${f}" belum diisi`, background:'#1e293b', color:'#e2e8f0' }); return; }
+                config[f] = val;
+            }
             if (!config.apiKey.startsWith('AIza')) {
-                Swal.fire('Peringatan', 'API Key Firebase biasanya diawali dengan "AIza"', 'warning');
-                return;
+                Swal.fire({ icon:'warning', title:'API Key Tidak Valid', text:'API Key Firebase biasanya diawali "AIza"', background:'#1e293b', color:'#e2e8f0' }); return;
             }
-            
-            // Simpan ke sessionStorage (hanya untuk sesi ini)
-            // Untuk permanen, simpan ke localStorage dengan enkripsi
-            const encrypted = btoa(JSON.stringify(config));
-            sessionStorage.setItem('psas_firebase_config', encrypted);
-            localStorage.setItem('psas_firebase_config', encrypted);
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Konfigurasi Firebase telah disimpan secara aman',
-                confirmButtonColor: '#3085d6'
-            }).then(() => {
-                window.location.href = 'index.html';
-            });
-        });
-        
-        // Cek apakah sudah ada config
-        const existingConfig = localStorage.getItem('psas_firebase_config');
-        if (existingConfig) {
-            Swal.fire({
-                title: 'Konfigurasi Sudah Ada',
-                text: 'Konfigurasi Firebase sudah tersimpan. Ingin mengubahnya?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Ubah',
-                cancelButtonText: 'Tidak, Lanjutkan'
-            }).then((result) => {
-                if (!result.isConfirmed) {
-                    window.location.href = 'index.html';
-                }
-            });
+            const enc = btoa(JSON.stringify(config));
+            localStorage.setItem('psas_firebase_config', enc);
+            sessionStorage.setItem('psas_firebase_config', enc);
+            Swal.fire({ icon:'success', title:'Berhasil!', text:'Konfigurasi Firebase disimpan', background:'#1e293b', color:'#e2e8f0', confirmButtonColor:'#4f46e5' })
+                .then(() => window.location.href = 'index.html');
         }
-        
-        // Keamanan
+
+        // Jika sudah ada config
+        const existing = localStorage.getItem('psas_firebase_config');
+        if (existing) {
+            try {
+                const c = JSON.parse(atob(existing));
+                document.getElementById('apiKey').value = c.apiKey || '';
+                document.getElementById('authDomain').value = c.authDomain || '';
+                document.getElementById('projectId').value = c.projectId || '';
+                document.getElementById('storageBucket').value = c.storageBucket || '';
+                document.getElementById('messagingSenderId').value = c.messagingSenderId || '';
+                document.getElementById('appId').value = c.appId || '';
+            } catch(e) {}
+            Swal.fire({ icon:'question', title:'Config Sudah Ada', text:'Ingin mengubah konfigurasi?', showCancelButton:true, confirmButtonText:'Ya, Ubah', cancelButtonText:'Tidak, Lanjutkan', background:'#1e293b', color:'#e2e8f0', confirmButtonColor:'#4f46e5' })
+                .then(r => { if (!r.isConfirmed) window.location.href = 'index.html'; });
+        }
+
+        // Blokir devtools ringan
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                e.preventDefault();
-            }
-        });
     </script>
 </body>
 </html>
