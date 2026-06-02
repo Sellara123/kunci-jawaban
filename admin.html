@@ -4,698 +4,936 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Admin Panel - PSAS System</title>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <link href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { user-select: none; -webkit-user-select: none; font-family: 'Inter', sans-serif; }
-        body { background: #f5f7fb; }
-        .section { display: none; animation: fadeIn 0.3s ease; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .stat-card { transition: all 0.2s ease; border: 1px solid rgba(0,0,0,0.05); }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px rgba(0,0,0,0.15); }
-        .nav-item.active { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.25); }
-        .nav-item.active i { color: white; }
-        .nav-item:not(.active):hover { background: #f1f5f9; }
-        .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); transition: all 0.2s; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,0.35); }
-        .modal-show { animation: modalFadeIn 0.2s ease; }
-        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
-        /* Dark Mode */
-        body.dark-mode { background: #0f172a; }
-        body.dark-mode .bg-white { background: #1e293b; color: #e2e8f0; }
-        body.dark-mode .text-gray-600, body.dark-mode .text-gray-500, body.dark-mode .text-gray-700 { color: #cbd5e1; }
-        body.dark-mode .border { border-color: #334155; }
-        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background: #0f172a; }
-        
-        /* Mobile */
-        @media (max-width: 768px) {
-            .flex.md\:flex-row { flex-direction: column; }
-            aside { width: 100%; position: sticky; top: 0; z-index: 40; overflow-x: auto; white-space: nowrap; }
-            aside nav { display: flex; flex-direction: row; padding: 0.5rem; gap: 0.5rem; overflow-x: auto; }
-            aside .nav-item { display: inline-flex; width: auto; padding: 0.5rem 1rem; }
-            aside .absolute { display: none; }
-            main { padding: 1rem; }
-            .grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        /* ===== CSS VARIABLES (dark mode via class, bukan body.dark-mode) ===== */
+        :root {
+            --bg: #f1f5f9; --surface: #ffffff; --border: #e2e8f0;
+            --text: #0f172a; --text-2: #64748b; --text-3: #94a3b8;
+            --sidebar-bg: #ffffff; --sidebar-border: #e2e8f0;
+            --nav-hover: #f1f5f9; --nav-active-bg: linear-gradient(135deg,#4f46e5,#6366f1);
+            --primary: #4f46e5; --primary-hover: #4338ca;
         }
+        html.dark {
+            --bg: #0f172a; --surface: #1e293b; --border: #334155;
+            --text: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+            --sidebar-bg: #1e293b; --sidebar-border: #334155;
+            --nav-hover: #0f172a;
+        }
+
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; user-select: none; -webkit-user-select: none; }
+        
+        /* ===== TOP NAVBAR ===== */
+        #topNav {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; gap: 12px;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 38px; height: 38px; background: linear-gradient(135deg,#4f46e5,#7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .logo-title { font-weight: 800; font-size: 16px; color: var(--text); }
+        .logo-sub { font-size: 11px; color: var(--text-3); }
+        .icon-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text-2); padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.15s; }
+        .icon-btn:hover { background: var(--border); }
+
+        /* ===== LAYOUT ===== */
+        #appLayout { display: flex; min-height: calc(100vh - 57px); }
+
+        /* ===== SIDEBAR (desktop) ===== */
+        #sidebar {
+            width: 240px; min-width: 240px; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border);
+            display: flex; flex-direction: column; position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+        }
+        .sidebar-section-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 16px 6px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin: 2px 8px;
+            border-radius: 10px; cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 14px;
+            border: none; background: transparent; width: calc(100% - 16px); text-align: left; transition: all 0.15s;
+        }
+        .nav-item:hover { background: var(--nav-hover); color: var(--text); }
+        .nav-item.active { background: linear-gradient(135deg,#4f46e5,#6366f1); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.25); }
+        .nav-item.active i { color: white !important; }
+        .nav-item i { width: 18px; text-align: center; }
+
+        /* ===== MOBILE NAV (bottom tabs) ===== */
+        #mobileNav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: var(--surface); border-top: 1px solid var(--border);
+            padding: 6px 0 env(safe-area-inset-bottom, 6px); overflow-x: auto;
+        }
+        .mobile-nav-inner { display: flex; justify-content: space-around; min-width: 480px; }
+        .m-nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px; border: none; background: transparent; cursor: pointer; color: var(--text-3); font-size: 10px; font-weight: 600; flex: 1; }
+        .m-nav-btn i { font-size: 18px; }
+        .m-nav-btn.active { color: #4f46e5; }
+        .m-nav-btn.active i { color: #4f46e5; }
+
+        @media (max-width: 768px) {
+            #sidebar { display: none; }
+            #mobileNav { display: block; }
+            #mainContent { padding: 16px 12px 80px; }
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        #mainContent { flex: 1; padding: 24px; overflow-x: hidden; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeUp 0.25s ease; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ===== COMPONENTS ===== */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+        .card-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .card-body { padding: 20px; }
+        .page-title { font-weight: 800; font-size: 19px; }
+        .page-sub { color: var(--text-3); font-size: 13px; margin-top: 2px; }
+
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; transition: transform 0.15s, box-shadow 0.15s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .btn { border: none; cursor: pointer; font-weight: 600; font-size: 13px; border-radius: 10px; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-indigo { background: linear-gradient(135deg,#4f46e5,#6366f1); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+        .btn-emerald { background: #059669; color: white; }
+        .btn-amber { background: #d97706; color: white; }
+        .btn-red { background: #dc2626; color: white; }
+        .btn-gray { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 7px; }
+
+        /* ===== TABLES ===== */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: var(--bg); color: var(--text-2); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg); }
+
+        .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .badge-indigo { background: #ede9fe; color: #5b21b6; }
+        .badge-blue { background: #dbeafe; color: #1d4ed8; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        html.dark .badge-indigo { background: #2e1065; color: #c4b5fd; }
+        html.dark .badge-blue { background: #1e3a5f; color: #93c5fd; }
+        html.dark .badge-green { background: #052e16; color: #6ee7b7; }
+        html.dark .badge-red { background: #450a0a; color: #fca5a5; }
+        html.dark .badge-amber { background: #451a03; color: #fcd34d; }
+
+        /* ===== MODALS ===== */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: none; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--surface); border-radius: 18px; padding: 24px; width: 100%; max-width: 480px; margin: auto; animation: pop 0.2s cubic-bezier(0.34,1.3,0.64,1); }
+        .modal-box.wide { max-width: 640px; }
+        @keyframes pop { from { opacity:0; transform: scale(0.93); } to { opacity:1; transform: scale(1); } }
+        .modal-title { font-weight: 800; font-size: 18px; margin-bottom: 20px; }
+        .field-group { display: flex; flex-direction: column; gap: 14px; }
+        .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .inp { width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.15s; }
+        .inp:focus { border-color: var(--primary); }
+        textarea.inp { resize: vertical; font-family: inherit; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        /* ===== RECENT LOGS ===== */
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+        .log-item:last-child { border-bottom: none; }
+        .rt-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse-dot 2s infinite; display: inline-block; }
+        @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        /* ===== EMPTY STATE ===== */
+        .empty { text-align: center; padding: 40px; color: var(--text-3); font-size: 14px; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
 
-    <!-- Top Navigation Bar -->
-    <nav class="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
-        <div class="px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+<!-- TOP NAV -->
+<nav id="topNav">
+    <div class="logo">
+        <div class="logo-icon"><i class="fas fa-graduation-cap text-white" style="font-size:16px;"></i></div>
+        <div>
+            <div class="logo-title">PSAS System</div>
+            <div class="logo-sub" style="display:flex;align-items:center;gap:4px;"><span class="rt-dot"></span> Admin Panel</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <button class="icon-btn" onclick="toggleDark()" title="Dark Mode"><i class="fas fa-moon"></i></button>
+        <div id="adminEmailWrap" style="display:flex;align-items:center;gap:8px;">
+            <div style="text-align:right;display:none;" id="emailBlock">
+                <div id="userEmail" style="font-size:13px;font-weight:600;color:var(--text);">-</div>
+                <div style="font-size:11px;color:var(--text-3);">Administrator</div>
+            </div>
+        </div>
+        <button class="btn btn-red" onclick="logout()" style="padding:8px 14px;">
+            <i class="fas fa-sign-out-alt"></i><span class="hidden sm:inline">Logout</span>
+        </button>
+    </div>
+</nav>
+
+<div id="appLayout">
+    <!-- SIDEBAR (desktop) -->
+    <aside id="sidebar">
+        <div style="padding:8px 0;">
+            <div class="sidebar-section-label">Menu Utama</div>
+            <button class="nav-item active" onclick="showSection('dashboard',this)"><i class="fas fa-chart-line" style="color:#6366f1;"></i> Dashboard</button>
+            <button class="nav-item" onclick="showSection('users',this)"><i class="fas fa-users" style="color:#3b82f6;"></i> Manajemen User</button>
+            <button class="nav-item" onclick="showSection('questions',this)"><i class="fas fa-database" style="color:#10b981;"></i> Bank Soal</button>
+            <button class="nav-item" onclick="showSection('scores',this)"><i class="fas fa-star" style="color:#f59e0b;"></i> Manajemen Nilai</button>
+            <button class="nav-item" onclick="showSection('logs',this)"><i class="fas fa-history" style="color:#8b5cf6;"></i> Log Aktivitas</button>
+            <button class="nav-item" onclick="showSection('banned',this)"><i class="fas fa-ban" style="color:#ef4444;"></i> Perangkat Diblokir</button>
+            <div class="sidebar-section-label">Sistem</div>
+            <button class="nav-item" onclick="showSection('settings',this)"><i class="fas fa-cog" style="color:var(--text-3);"></i> Pengaturan</button>
+        </div>
+        <div style="margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);">
+            <i class="fas fa-shield-alt mr-1"></i> PSAS System v2.1
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="mainContent">
+
+        <!-- DASHBOARD -->
+        <div id="dashboardSection" class="section active">
+            <div style="margin-bottom:20px;">
+                <h2 class="page-title">Dashboard</h2>
+                <p class="page-sub">Selamat datang kembali, Administrator</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><p style="font-size:12px;color:var(--text-3);font-weight:600;">Total User</p><p id="totalUsers" style="font-size:28px;font-weight:800;margin-top:4px;">—</p></div>
+                        <div style="width:40px;height:40px;background:#ede9fe;border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-users" style="color:#6366f1;font-size:16px;"></i></div>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold text-gray-800">PSAS Preview System</h1>
-                    <p class="text-xs text-gray-500">Administration Panel</p>
+                <div class="stat-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><p style="font-size:12px;color:var(--text-3);font-weight:600;">Total Soal</p><p id="totalQuestions" style="font-size:28px;font-weight:800;margin-top:4px;">—</p></div>
+                        <div style="width:40px;height:40px;background:#d1fae5;border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-question-circle" style="color:#059669;font-size:16px;"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><p style="font-size:12px;color:var(--text-3);font-weight:600;">Total Nilai</p><p id="totalScores" style="font-size:28px;font-weight:800;margin-top:4px;">—</p></div>
+                        <div style="width:40px;height:40px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-star" style="color:#f59e0b;font-size:16px;"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><p style="font-size:12px;color:var(--text-3);font-weight:600;">Login Hari Ini</p><p id="todayLogins" style="font-size:28px;font-weight:800;margin-top:4px;">—</p></div>
+                        <div style="width:40px;height:40px;background:#ede9fe;border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-chart-line" style="color:#8b5cf6;font-size:16px;"></i></div>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition">
-                    <i class="fas fa-moon text-lg"></i>
-                </button>
-                <div class="flex items-center space-x-3">
-                    <div class="text-right hidden sm:block">
-                        <p id="userEmail" class="text-sm font-medium text-gray-700">admin@psas.com</p>
-                        <p class="text-xs text-gray-400">Administrator</p>
+            <div class="card">
+                <div class="card-header">
+                    <div><div class="page-title" style="font-size:16px;">Aktivitas Terbaru</div></div>
+                    <button onclick="showSection('logs',null)" style="background:none;border:none;color:#4f46e5;font-size:13px;font-weight:600;cursor:pointer;">Lihat semua →</button>
+                </div>
+                <div class="card-body" id="recentLogs"><div class="empty">Memuat...</div></div>
+            </div>
+        </div>
+
+        <!-- USERS -->
+        <div id="usersSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div><div class="page-title">Manajemen User</div><div class="page-sub">Kelola akun pengguna sistem</div></div>
+                    <button class="btn btn-indigo" onclick="openUserModal()"><i class="fas fa-plus"></i> Tambah User</button>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-wrap">
+                        <table id="usersTable">
+                            <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+                            <tbody id="usersBody"><tr><td colspan="5" class="empty">Memuat...</td></tr></tbody>
+                        </table>
                     </div>
-                    <button onclick="logout()" class="flex items-center space-x-2 px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 transition">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span class="hidden sm:inline">Logout</span>
-                    </button>
                 </div>
             </div>
         </div>
-    </nav>
 
-    <div class="flex">
-        <!-- Sidebar -->
-        <aside class="w-72 bg-white border-r border-gray-100 min-h-screen sticky top-0">
-            <div class="p-4 space-y-1">
-                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu Utama</div>
-                <button onclick="showSection('dashboard', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-chart-line w-5 text-indigo-400"></i><span class="font-medium">Dashboard</span>
-                </button>
-                <button onclick="showSection('users', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-users w-5 text-blue-400"></i><span class="font-medium">Manajemen User</span>
-                </button>
-                <button onclick="showSection('questions', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-database w-5 text-emerald-400"></i><span class="font-medium">Bank Soal</span>
-                </button>
-                <button onclick="showSection('scores', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-star w-5 text-amber-400"></i><span class="font-medium">Manajemen Nilai</span>
-                </button>
-                <button onclick="showSection('logs', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-history w-5 text-purple-400"></i><span class="font-medium">Log Aktivitas</span>
-                </button>
-                <button onclick="showSection('banned', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-ban w-5 text-red-400"></i><span class="font-medium">Perangkat Diblokir</span>
-                </button>
-                <button onclick="showSection('settings', event)" class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center space-x-3 text-gray-600 hover:bg-gray-50 transition-all">
-                    <i class="fas fa-cog w-5 text-gray-400"></i><span class="font-medium">Pengaturan</span>
-                </button>
-            </div>
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
-                <div class="flex items-center space-x-3 text-xs text-gray-400">
-                    <i class="fas fa-shield-alt"></i><span>PSAS System v2.0</span>
+        <!-- QUESTIONS -->
+        <div id="questionsSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div><div class="page-title">Bank Soal</div><div class="page-sub">Kelola kumpulan soal ujian</div></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-emerald" onclick="openQuestionModal()"><i class="fas fa-plus"></i> Tambah</button>
+                        <button class="btn btn-indigo" onclick="importQuestionsExcel()"><i class="fas fa-upload"></i> Import</button>
+                        <button class="btn btn-gray" onclick="exportQuestionsExcel()"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" class="inp" id="questionSearch" placeholder="Cari soal..." style="max-width:220px;padding:7px 12px;" oninput="filterQuestions()">
+                    <select class="inp" id="questionFilterMapel" style="max-width:160px;padding:7px 12px;" onchange="filterQuestions()"><option value="">Semua Mapel</option></select>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-wrap">
+                        <table><thead><tr><th>Mapel</th><th>Kelas</th><th>No</th><th>Soal</th><th>Jenis</th><th>Status</th><th>Aksi</th></tr></thead>
+                        <tbody id="questionsBody"><tr><td colspan="7" class="empty">Memuat...</td></tr></tbody></table>
+                    </div>
                 </div>
             </div>
-        </aside>
+        </div>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-8">
-            <!-- Dashboard Section -->
-            <div id="dashboardSection" class="section active">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
-                    <p class="text-gray-500 mt-1">Selamat datang kembali, Administrator</p>
+        <!-- SCORES -->
+        <div id="scoresSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div><div class="page-title">Manajemen Nilai</div><div class="page-sub">Kelola data nilai siswa</div></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-indigo" onclick="importScoresExcel()"><i class="fas fa-upload"></i> Import</button>
+                        <button class="btn btn-gray" onclick="exportScoresExcel()"><i class="fas fa-download"></i> Export</button>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div><p class="text-gray-500 text-sm">Total User</p><p id="totalUsers" class="text-3xl font-bold text-gray-800 mt-2">0</p></div>
-                            <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center"><i class="fas fa-users text-indigo-500 text-xl"></i></div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-wrap">
+                        <table><thead><tr><th>Nama</th><th>NISN</th><th>Kelas</th><th>Mapel</th><th>Nilai</th><th>Aksi</th></tr></thead>
+                        <tbody id="scoresBody"><tr><td colspan="6" class="empty">Memuat...</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGS -->
+        <div id="logsSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div><div class="page-title">Log Aktivitas</div><div class="page-sub">Riwayat semua aktivitas sistem</div></div>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-wrap">
+                        <table><thead><tr><th>Waktu</th><th>User</th><th>Role</th><th>Aksi</th></tr></thead>
+                        <tbody id="logsBody"><tr><td colspan="4" class="empty">Memuat...</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BANNED -->
+        <div id="bannedSection" class="section">
+            <div class="card">
+                <div class="card-header"><div><div class="page-title">Perangkat Diblokir</div><div class="page-sub">Daftar perangkat yang diblokir</div></div></div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-wrap">
+                        <table><thead><tr><th>Fingerprint</th><th>Alasan</th><th>Tanggal</th><th>Aksi</th></tr></thead>
+                        <tbody id="bannedBody"><tr><td colspan="4" class="empty">Memuat...</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="settingsSection" class="section">
+            <div style="max-width:560px;">
+                <div class="card" style="padding:24px;">
+                    <div class="page-title" style="margin-bottom:4px;">Pengaturan Sistem</div>
+                    <div class="page-sub" style="margin-bottom:24px;">Konfigurasi sistem PSAS Preview</div>
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+                        <div>
+                            <label style="display:block;font-weight:700;font-size:14px;margin-bottom:8px;">Maksimal Mapel Aktif per Hari</label>
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <input type="number" id="maxSubjectsPerDay" class="inp" style="width:100px;">
+                                <button class="btn btn-indigo" onclick="updateSetting('maxSubjectsPerDay')">Simpan</button>
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid var(--border);padding-top:20px;">
+                            <label style="display:block;font-weight:700;font-size:14px;margin-bottom:10px;">Database Management</label>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <button class="btn btn-emerald" onclick="backupDatabase()"><i class="fas fa-database"></i> Backup</button>
+                                <button class="btn btn-amber" onclick="restoreDatabase()"><i class="fas fa-undo-alt"></i> Restore</button>
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid var(--border);padding-top:20px;">
+                            <label style="display:block;font-weight:700;font-size:14px;margin-bottom:10px;">Informasi Sistem</label>
+                            <div style="background:var(--bg);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">Versi</span><span style="font-weight:600;">PSAS System v2.1</span></div>
+                                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">Firebase</span><span style="font-weight:600;">9.22.0 Compat</span></div>
+                                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-3);">Real-time</span><span style="font-weight:600;color:#22c55e;">Aktif ✓</span></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div><p class="text-gray-500 text-sm">Total Soal</p><p id="totalQuestions" class="text-3xl font-bold text-gray-800 mt-2">0</p></div>
-                            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center"><i class="fas fa-question-circle text-emerald-500 text-xl"></i></div>
-                        </div>
-                    </div>
-                    <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div><p class="text-gray-500 text-sm">Total Nilai</p><p id="totalScores" class="text-3xl font-bold text-gray-800 mt-2">0</p></div>
-                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center"><i class="fas fa-star text-amber-500 text-xl"></i></div>
-                        </div>
-                    </div>
-                    <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div><p class="text-gray-500 text-sm">Login Hari Ini</p><p id="todayLogins" class="text-3xl font-bold text-gray-800 mt-2">0</p></div>
-                            <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center"><i class="fas fa-chart-line text-purple-500 text-xl"></i></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-gray-800">Aktivitas Terbaru</h3>
-                        <button onclick="showSection('logs', event)" class="text-indigo-600 text-sm hover:underline">Lihat semua →</button>
-                    </div>
-                    <div id="recentLogs" class="space-y-3"><div class="text-center text-gray-400 py-8">Memuat data...</div></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Users Section -->
-            <div id="usersSection" class="section">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100 flex justify-between items-center flex-wrap gap-3">
-                        <div><h2 class="text-xl font-bold text-gray-800">Manajemen User</h2><p class="text-gray-500 text-sm mt-1">Kelola akun pengguna sistem</p></div>
-                        <button onclick="showAddUserModal()" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium flex items-center space-x-2 shadow-sm"><i class="fas fa-plus text-sm"></i><span>Tambah User</span></button>
-                    </div>
-<table id="usersTable" class="w-full text-sm">
-    <thead>
-        <tr class="bg-gray-100">
-            <th class="p-2 text-left">Username</th>
-            <th class="p-2 text-left">Role</th>
-            <th class="p-2 text-left">Status</th>
-            <th class="p-2 text-left">Aksi</th>
-        </tr>
-    </thead>
-    <tbody id="usersTableBody"></tbody>
-</table>
-                </div>
-            </div>
+    </main>
+</div>
 
-            <!-- Questions Section -->
-            <div id="questionsSection" class="section">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100"><div class="flex justify-between items-center flex-wrap gap-3"><div><h2 class="text-xl font-bold text-gray-800">Bank Soal</h2><p class="text-gray-500 text-sm mt-1">Kelola kumpulan soal ujian</p></div><div class="flex gap-2"><button onclick="showAddQuestionModal()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-xl text-white text-sm"><i class="fas fa-plus"></i> Tambah</button><button onclick="importQuestionsExcel()" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-xl text-white text-sm"><i class="fas fa-upload"></i> Import</button><button onclick="exportQuestionsExcel()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl text-white text-sm"><i class="fas fa-download"></i> Export</button></div></div></div>
-                    <div class="p-6"><div class="overflow-x-auto"><table id="questionsTable" class="w-full text-sm"><thead><tr><th>Mapel</th><th>Kelas</th><th>No</th><th>Soal</th><th>Jenis</th><th>Aksi</th></tr></thead><tbody id="questionsTableBody"></tbody></table></div></div>
-                </div>
-            </div>
-
-            <!-- Scores Section -->
-            <div id="scoresSection" class="section">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100"><div class="flex justify-between items-center flex-wrap gap-3"><div><h2 class="text-xl font-bold text-gray-800">Manajemen Nilai</h2><p class="text-gray-500 text-sm mt-1">Kelola data nilai siswa</p></div><div class="flex gap-2"><button onclick="importScoresExcel()" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-xl text-white text-sm"><i class="fas fa-upload"></i> Import Excel</button><button onclick="exportScoresExcel()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl text-white text-sm"><i class="fas fa-download"></i> Export Excel</button></div></div></div>
-                    <div class="p-6"><div class="overflow-x-auto"><table id="scoresTable" class="w-full text-sm"><thead><tr><th>Nama</th><th>NISN</th><th>Kelas</th><th>Mapel</th><th>Nilai</th><th>Aksi</th></tr></thead><tbody id="scoresTableBody"></tbody></table></div></div>
-                </div>
-            </div>
-
-            <!-- Logs Section -->
-            <div id="logsSection" class="section">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100"><h2 class="text-xl font-bold text-gray-800">Log Aktivitas</h2><p class="text-gray-500 text-sm mt-1">Riwayat semua aktivitas sistem</p></div>
-                    <div class="p-6"><div class="overflow-x-auto"><table id="logsTable" class="w-full text-sm"><thead><tr><th>Waktu</th><th>User</th><th>Aktivitas</th></tr></thead><tbody id="logsTableBody"></tbody></table></div></div>
-                </div>
-            </div>
-
-            <!-- Banned Section -->
-            <div id="bannedSection" class="section">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100"><h2 class="text-xl font-bold text-gray-800">Perangkat Diblokir</h2><p class="text-gray-500 text-sm mt-1">Daftar perangkat yang diblokir</p></div>
-                    <div class="p-6"><div class="overflow-x-auto"><table id="bannedTable" class="w-full text-sm"><thead><tr><th>Fingerprint</th><th>Alasan</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="bannedTableBody"></tbody></table></div></div>
-                </div>
-            </div>
-
-            <!-- Settings Section -->
-            <div id="settingsSection" class="section">
-                <div class="max-w-2xl"><div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"><h2 class="text-xl font-bold text-gray-800 mb-2">Pengaturan Sistem</h2><p class="text-gray-500 text-sm mb-6">Konfigurasi sistem PSAS Preview</p>
-                    <div class="space-y-6"><div class="border-b border-gray-100 pb-6"><label class="block font-semibold text-gray-700 mb-2">Maksimal Mapel Aktif per Hari</label><div class="flex items-center gap-3"><input type="number" id="maxSubjectsPerDay" class="border border-gray-200 rounded-xl px-4 py-2 w-32"><button onclick="updateSetting('maxSubjectsPerDay')" class="btn-primary px-5 py-2 rounded-xl text-white font-medium">Simpan</button></div></div>
-                    <div class="border-b border-gray-100 pb-6"><label class="block font-semibold text-gray-700 mb-2">Database Management</label><div class="flex gap-3"><button onclick="backupDatabase()" class="bg-emerald-500 hover:bg-emerald-600 px-5 py-2 rounded-xl text-white"><i class="fas fa-database"></i> Backup</button><button onclick="restoreDatabase()" class="bg-amber-500 hover:bg-amber-600 px-5 py-2 rounded-xl text-white"><i class="fas fa-undo-alt"></i> Restore</button></div></div>
-                    <div><label class="block font-semibold text-gray-700 mb-2">Informasi Sistem</label><div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm"><div class="flex justify-between"><span class="text-gray-500">Versi</span><span class="font-medium">PSAS System v2.0</span></div><div class="flex justify-between"><span class="text-gray-500">Framework</span><span class="font-medium">Firebase + TailwindCSS</span></div></div></div></div></div></div>
-            </div>
-        </main>
+<!-- MOBILE BOTTOM NAV -->
+<div id="mobileNav">
+    <div class="mobile-nav-inner">
+        <button class="m-nav-btn active" id="mnDashboard" onclick="showSection('dashboard',null);setMobileNav('Dashboard')"><i class="fas fa-chart-line"></i>Dashboard</button>
+        <button class="m-nav-btn" id="mnUsers" onclick="showSection('users',null);setMobileNav('Users')"><i class="fas fa-users"></i>Users</button>
+        <button class="m-nav-btn" id="mnQuestions" onclick="showSection('questions',null);setMobileNav('Questions')"><i class="fas fa-database"></i>Soal</button>
+        <button class="m-nav-btn" id="mnScores" onclick="showSection('scores',null);setMobileNav('Scores')"><i class="fas fa-star"></i>Nilai</button>
+        <button class="m-nav-btn" id="mnLogs" onclick="showSection('logs',null);setMobileNav('Logs')"><i class="fas fa-history"></i>Log</button>
+        <button class="m-nav-btn" id="mnSettings" onclick="showSection('settings',null);setMobileNav('Settings')"><i class="fas fa-cog"></i>Setting</button>
     </div>
+</div>
 
-<div id="userModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" onclick="if(event.target===this) closeModal('userModal')">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-md modal-show">
-        <h3 id="userModalTitle" class="text-xl font-bold text-gray-800 mb-4">Tambah User</h3>
+<!-- MODAL USER -->
+<div id="userModal" class="modal-overlay" onclick="if(event.target===this)closeModal('userModal')">
+    <div class="modal-box">
+        <h3 class="modal-title" id="userModalTitle">Tambah User</h3>
         <input type="hidden" id="editUserId">
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input type="text" id="userUsername" placeholder="contoh: johndoe" class="w-full border border-gray-200 rounded-xl p-3">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input type="password" id="userPassword" placeholder="Minimal 6 karakter" class="w-full border border-gray-200 rounded-xl p-3">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select id="userRole" class="w-full border border-gray-200 rounded-xl p-3">
+        <div class="field-group">
+            <div class="field"><label>Username</label><input type="text" id="userUsername" class="inp" placeholder="contoh: johndoe" autocomplete="off"></div>
+            <div class="field" id="passwordField"><label>Password <span id="passHint" style="color:var(--text-3);font-weight:400;text-transform:none;">(min. 6 karakter)</span></label><input type="password" id="userPassword" class="inp" placeholder="Minimal 6 karakter"></div>
+            <div class="field"><label>Role</label>
+                <select id="userRole" class="inp">
                     <option value="user">👤 User (Preview Soal)</option>
                     <option value="guru">👨‍🏫 Guru (Preview + Jawaban)</option>
                     <option value="admin">👑 Admin (Full Akses)</option>
                 </select>
             </div>
-            <div class="flex gap-3 pt-2">
-                <button onclick="saveUser()" class="flex-1 btn-primary py-3 rounded-xl text-white font-medium">Simpan</button>
-                <button onclick="closeModal('userModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 py-3 rounded-xl text-gray-700 font-medium">Batal</button>
-            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-indigo" style="flex:1;" onclick="saveUser()">Simpan</button>
+            <button class="btn btn-gray" style="flex:1;" onclick="closeModal('userModal')">Batal</button>
         </div>
     </div>
 </div>
 
-    <!-- Modal Soal -->
-    <div id="questionModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl my-8 modal-show">
-            <h3 id="questionModalTitle" class="text-xl font-bold text-gray-800 mb-4">Tambah Soal</h3>
-            <input type="hidden" id="editQuestionId">
-            <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                <input type="text" id="questionMapel" placeholder="Mapel" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionKelas" placeholder="Kelas" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionHari" placeholder="Hari" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="number" id="questionNomor" placeholder="Nomor Soal" class="w-full border border-gray-200 rounded-xl p-3">
-                <textarea id="questionText" placeholder="Isi Soal" rows="3" class="w-full border border-gray-200 rounded-xl p-3"></textarea>
-                <input type="text" id="questionA" placeholder="Pilihan A" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionB" placeholder="Pilihan B" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionC" placeholder="Pilihan C" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionD" placeholder="Pilihan D" class="w-full border border-gray-200 rounded-xl p-3">
-                <input type="text" id="questionE" placeholder="Pilihan E" class="w-full border border-gray-200 rounded-xl p-3">
-                <select id="questionType" class="w-full border border-gray-200 rounded-xl p-3"><option value="pilihan_ganda">Pilihan Ganda</option><option value="multi_jawaban">Pilihan Lebih Dari 1 Jawaban</option></select>
-                <input type="text" id="questionAnswer" placeholder="Jawaban Benar (pisahkan koma)" class="w-full border border-gray-200 rounded-xl p-3">
-                <label class="flex items-center gap-2 p-2"><input type="checkbox" id="questionActive" checked class="w-4 h-4"><span>Aktif</span></label>
-                <button onclick="saveQuestion()" class="w-full btn-primary py-3 rounded-xl text-white font-medium mt-3">Simpan</button>
-                <button onclick="closeModal('questionModal')" class="w-full bg-gray-100 hover:bg-gray-200 py-3 rounded-xl text-gray-700 font-medium">Batal</button>
+<!-- MODAL SOAL -->
+<div id="questionModal" class="modal-overlay" onclick="if(event.target===this)closeModal('questionModal')">
+    <div class="modal-box wide">
+        <h3 class="modal-title" id="questionModalTitle">Tambah Soal</h3>
+        <input type="hidden" id="editQuestionId">
+        <div style="max-height:65vh;overflow-y:auto;padding-right:4px;">
+            <div class="field-group">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="field"><label>Mata Pelajaran</label><input type="text" id="questionMapel" class="inp" placeholder="Matematika"></div>
+                    <div class="field"><label>Kelas</label><input type="text" id="questionKelas" class="inp" placeholder="X IPA 1"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="field"><label>Hari</label><input type="text" id="questionHari" class="inp" placeholder="Senin"></div>
+                    <div class="field"><label>Nomor Soal</label><input type="number" id="questionNomor" class="inp" placeholder="1"></div>
+                </div>
+                <div class="field"><label>Isi Soal</label><textarea id="questionText" class="inp" rows="3" placeholder="Tuliskan soal di sini..."></textarea></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div class="field"><label>Pilihan A</label><input type="text" id="questionA" class="inp"></div>
+                    <div class="field"><label>Pilihan B</label><input type="text" id="questionB" class="inp"></div>
+                    <div class="field"><label>Pilihan C</label><input type="text" id="questionC" class="inp"></div>
+                    <div class="field"><label>Pilihan D</label><input type="text" id="questionD" class="inp"></div>
+                    <div class="field"><label>Pilihan E</label><input type="text" id="questionE" class="inp"></div>
+                </div>
+                <div class="field"><label>Jenis Soal</label>
+                    <select id="questionType" class="inp"><option value="pilihan_ganda">Pilihan Ganda</option><option value="multi_jawaban">Pilih Lebih Dari 1 Jawaban</option></select>
+                </div>
+                <div class="field"><label>Jawaban Benar <span style="color:var(--text-3);font-weight:400;text-transform:none;">(pisahkan koma: A,B)</span></label><input type="text" id="questionAnswer" class="inp" placeholder="A atau A,B"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                    <input type="checkbox" id="questionActive" checked style="width:16px;height:16px;accent-color:#4f46e5;">
+                    <label for="questionActive" style="font-size:14px;font-weight:600;cursor:pointer;">Soal Aktif</label>
+                </div>
             </div>
         </div>
+        <div class="modal-actions">
+            <button class="btn btn-indigo" style="flex:1;" onclick="saveQuestion()">Simpan</button>
+            <button class="btn btn-gray" style="flex:1;" onclick="closeModal('questionModal')">Batal</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        let currentUser = null, auth = null, db = null;
-        let usersTable, questionsTable, scoresTable, logsTable, bannedTable;
+<script>
+// ==================== STATE ====================
+let auth = null, db = null, currentUser = null;
+let allQuestions = [], allUsers = [];
+// Real-time listeners
+let unsubUsers = null, unsubQuestions = null, unsubScores = null, unsubLogs = null, unsubBanned = null, unsubDash = null;
 
-        // Firebase Config
-        function getFirebaseConfig() {
-            let configFromStorage = sessionStorage.getItem('psas_firebase_config');
-            if (!configFromStorage) configFromStorage = localStorage.getItem('psas_firebase_config');
-            if (configFromStorage) { try { return JSON.parse(atob(configFromStorage)); } catch(e) {} }
-            Swal.fire({ title: 'Konfigurasi Firebase Belum Diatur', text: 'Silakan setup konfigurasi Firebase terlebih dahulu', icon: 'info', confirmButtonText: 'Setup Sekarang' }).then(() => { window.location.href = 'setup-env.html'; });
-            return null;
-        }
+// ==================== DARK MODE ====================
+function toggleDark() {
+    const d = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('psas_dark', d ? '1' : '0');
+}
+if (localStorage.getItem('psas_dark') === '1') document.documentElement.classList.add('dark');
 
-        function initFirebase() {
-            const config = getFirebaseConfig();
-            if (!config) return false;
-            try { if (!firebase.apps.length) firebase.initializeApp(config); auth = firebase.auth(); db = firebase.firestore(); return true; } catch(e) { return false; }
-        }
-
-        // Auth Check
-        async function checkAuth() {
-            auth.onAuthStateChanged(async (user) => {
-                if (!user) { window.location.href = 'index.html'; return; }
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (!userDoc.exists || userDoc.data().role !== 'admin') { await auth.signOut(); window.location.href = 'index.html'; return; }
-                if (userDoc.data().banned) { await auth.signOut(); Swal.fire('Diblokir', 'Akun Anda telah diblokir', 'error').then(() => { window.location.href = 'index.html'; }); return; }
-                currentUser = user;
-                document.getElementById('userEmail').innerText = user.email;
-                await loadAllData();
-                await loadRecentLogs();
-            });
-        }
-
-        async function loadRecentLogs() {
-            const logsSnap = await db.collection('logs').orderBy('timestamp', 'desc').limit(5).get();
-            const container = document.getElementById('recentLogs');
-            if (logsSnap.empty) { container.innerHTML = '<div class="text-center text-gray-400 py-4">Belum ada aktivitas</div>'; return; }
-            container.innerHTML = '';
-            logsSnap.forEach(doc => {
-                const log = doc.data();
-                container.innerHTML += `<div class="flex items-center justify-between py-2 border-b border-gray-100"><div><span class="text-sm text-gray-600">${log.email || log.userId}</span><p class="text-xs text-gray-400">${log.action}</p></div><span class="text-xs text-gray-400">${new Date(log.timestamp?.toDate()).toLocaleTimeString()}</span></div>`;
-            });
-        }
-
-        async function loadAllData() {
-            await loadDashboardStats(); await loadUsers(); await loadQuestions(); await loadScores(); await loadLogs(); await loadBannedDevices(); await loadSettings();
-        }
-
-        async function loadDashboardStats() {
-            const users = await db.collection('users').get();
-            const questions = await db.collection('questions').get();
-            const scores = await db.collection('scores').get();
-            const today = new Date(); today.setHours(0,0,0,0);
-            const todayLogins = await db.collection('logs').where('action', '==', 'login').where('timestamp', '>=', today).get();
-            document.getElementById('totalUsers').innerText = users.size;
-            document.getElementById('totalQuestions').innerText = questions.size;
-            document.getElementById('totalScores').innerText = scores.size;
-            document.getElementById('todayLogins').innerText = todayLogins.size;
-        }
-
-async function loadUsers() {
-    const usersSnap = await db.collection('users').get();
-    const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '';
-    
-    usersSnap.forEach(doc => {
-        const user = doc.data();
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = user.username || '-';
-        row.insertCell(1).innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : user.role === 'guru' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${user.role || 'user'}</span>`;
-        row.insertCell(2).innerHTML = user.banned ? '<span class="text-red-600">Diblokir</span>' : '<span class="text-emerald-600">Aktif</span>';
-        row.insertCell(3).innerHTML = `
-            <button onclick="editUser('${doc.id}', '${user.username}', '${user.role}')" class="text-indigo-500 mr-2"><i class="fas fa-edit"></i></button>
-            <button onclick="banUser('${doc.id}')" class="text-red-500 mr-2"><i class="fas fa-ban"></i></button>
-            <button onclick="deleteUser('${doc.id}')" class="text-gray-400"><i class="fas fa-trash-alt"></i></button>
-        `;
-    });
-    
-    if (usersTable) usersTable.destroy();
-    usersTable = $('#usersTable').DataTable({ pageLength: 10, language: { search: "Cari:", lengthMenu: "Tampilkan _MENU_ data", info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data" } });
+// ==================== FIREBASE ====================
+function getFirebaseConfig() {
+    let raw = sessionStorage.getItem('psas_firebase_config') || localStorage.getItem('psas_firebase_config');
+    if (raw) { try { return JSON.parse(atob(raw)); } catch(e) {} }
+    if (window._env_?.FIREBASE_CONFIG) return window._env_.FIREBASE_CONFIG;
+    Swal.fire({ title:'Konfigurasi Belum Diatur', icon:'info', confirmButtonText:'Setup', confirmButtonColor:'#4f46e5' })
+        .then(() => location.href = 'setup-env.html');
+    return null;
 }
 
-        async function loadQuestions() {
-            const questionsSnap = await db.collection('questions').orderBy('nomor').get();
-            const tbody = document.getElementById('questionsTableBody');
-            tbody.innerHTML = '';
-            questionsSnap.forEach(doc => {
-                const q = doc.data();
-                const row = tbody.insertRow();
-                row.insertCell(0).innerHTML = q.mapel || '-';
-                row.insertCell(1).innerHTML = q.kelas || '-';
-                row.insertCell(2).innerHTML = q.nomor || '-';
-                row.insertCell(3).innerHTML = (q.text || '').substring(0, 45) + '...';
-                row.insertCell(4).innerHTML = q.type === 'pilihan_ganda' ? '<span class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs">Pilgan</span>' : '<span class="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs">Multi</span>';
-                row.insertCell(5).innerHTML = `<button onclick="editQuestion('${doc.id}')" class="text-indigo-500 mr-2"><i class="fas fa-edit"></i></button><button onclick="deleteQuestion('${doc.id}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button>`;
-            });
-            if (questionsTable) questionsTable.destroy();
-            questionsTable = $('#questionsTable').DataTable({ pageLength: 10 });
+function initFirebase() {
+    const config = getFirebaseConfig();
+    if (!config) return false;
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(config);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        return true;
+    } catch(e) { console.error(e); return false; }
+}
+
+// ==================== AUTH ====================
+function checkAuth() {
+    auth.onAuthStateChanged(async user => {
+        if (!user) { location.href = 'index.html'; return; }
+        const snap = await db.collection('users').doc(user.uid).get().catch(() => null);
+        if (!snap || !snap.exists || snap.data().role !== 'admin') {
+            await auth.signOut(); location.href = 'index.html'; return;
         }
+        if (snap.data().banned) { await auth.signOut(); location.href = 'index.html'; return; }
+        currentUser = user;
+        const emailBlock = document.getElementById('emailBlock');
+        if (emailBlock) { emailBlock.style.display = 'block'; document.getElementById('userEmail').textContent = snap.data().username || user.email; }
+        initRealtimeListeners();
+    });
+}
 
-        async function loadScores() {
-            const scoresSnap = await db.collection('scores').get();
-            const tbody = document.getElementById('scoresTableBody');
-            tbody.innerHTML = '';
-            scoresSnap.forEach(doc => {
-                const s = doc.data();
-                const row = tbody.insertRow();
-                row.insertCell(0).innerHTML = s.nama || '-';
-                row.insertCell(1).innerHTML = s.nisn || '-';
-                row.insertCell(2).innerHTML = s.kelas || '-';
-                row.insertCell(3).innerHTML = s.mapel || '-';
-                row.insertCell(4).innerHTML = `<span class="font-semibold ${s.nilai >= 75 ? 'text-emerald-600' : 'text-red-600'}">${s.nilai || '-'}</span>`;
-                row.insertCell(5).innerHTML = `<button onclick="deleteScore('${doc.id}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button>`;
-            });
-            if (scoresTable) scoresTable.destroy();
-            scoresTable = $('#scoresTable').DataTable({ pageLength: 10 });
-        }
+// ==================== REAL-TIME LISTENERS ====================
+function initRealtimeListeners() {
+    // Dashboard stats (real-time)
+    unsubDash = db.collection('users').onSnapshot(s => document.getElementById('totalUsers').textContent = s.size);
+    db.collection('questions').onSnapshot(s => document.getElementById('totalQuestions').textContent = s.size);
+    db.collection('scores').onSnapshot(s => document.getElementById('totalScores').textContent = s.size);
 
-        async function loadLogs() {
-            const logsSnap = await db.collection('logs').orderBy('timestamp', 'desc').limit(200).get();
-            const tbody = document.getElementById('logsTableBody');
-            tbody.innerHTML = '';
-            logsSnap.forEach(doc => {
-                const log = doc.data();
-                const row = tbody.insertRow();
-                row.insertCell(0).innerHTML = new Date(log.timestamp?.toDate()).toLocaleString('id-ID');
-                row.insertCell(1).innerHTML = log.email || log.userId;
-                row.insertCell(2).innerHTML = log.action;
-            });
-            if (logsTable) logsTable.destroy();
-            logsTable = $('#logsTable').DataTable({ order: [[0, 'desc']], pageLength: 25 });
-        }
+    // Login hari ini
+    const today = new Date(); today.setHours(0,0,0,0);
+    db.collection('logs').where('action','==','login').where('timestamp','>=',today)
+        .onSnapshot(s => document.getElementById('todayLogins').textContent = s.size);
 
-        async function loadBannedDevices() {
-            const bannedSnap = await db.collection('banned_devices').get();
-            const tbody = document.getElementById('bannedTableBody');
-            tbody.innerHTML = '';
-            bannedSnap.forEach(doc => {
-                const b = doc.data();
-                const row = tbody.insertRow();
-                row.insertCell(0).innerHTML = (b.fingerprint || '').substring(0, 35) + '...';
-                row.insertCell(1).innerHTML = b.reason || 'Pelanggaran';
-                row.insertCell(2).innerHTML = new Date(b.createdAt?.toDate()).toLocaleDateString('id-ID');
-                row.insertCell(3).innerHTML = `<button onclick="unbanDevice('${doc.id}')" class="text-emerald-500"><i class="fas fa-check-circle"></i></button>`;
-            });
-            if (bannedTable) bannedTable.destroy();
-            bannedTable = $('#bannedTable').DataTable({ pageLength: 10 });
-        }
+    // Recent logs
+    db.collection('logs').orderBy('timestamp','desc').limit(5).onSnapshot(snap => {
+        const el = document.getElementById('recentLogs');
+        if (snap.empty) { el.innerHTML = '<div class="empty">Belum ada aktivitas</div>'; return; }
+        el.innerHTML = '';
+        snap.forEach(doc => {
+            const l = doc.data();
+            const time = l.timestamp?.toDate ? new Date(l.timestamp.toDate()).toLocaleTimeString('id-ID') : '-';
+            el.innerHTML += `
+                <div class="log-item">
+                    <div><div style="font-size:13px;font-weight:600;">${l.username || l.email || l.userId || '-'}</div><div style="font-size:12px;color:var(--text-3);">${l.action}</div></div>
+                    <span style="font-size:12px;color:var(--text-3);">${time}</span>
+                </div>`;
+        });
+    });
 
-        async function loadSettings() {
-            const settings = await db.collection('settings').doc('general').get();
-            if (settings.exists) document.getElementById('maxSubjectsPerDay').value = settings.data().maxSubjectsPerDay || 4;
-        }
+    // Users
+    unsubUsers = db.collection('users').orderBy('createdAt','desc').onSnapshot(snap => {
+        allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderUsers();
+    });
 
-        function showSection(section, event) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            const targetSection = document.getElementById(`${section}Section`);
-            if (targetSection) targetSection.classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            if (event && event.target) {
-                const clickedNav = event.target.closest('.nav-item');
-                if (clickedNav) clickedNav.classList.add('active');
-            }
-        }
+    // Questions
+    unsubQuestions = db.collection('questions').orderBy('nomor').onSnapshot(snap => {
+        allQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Update mapel filter
+        const mapelSet = new Set(allQuestions.map(q => q.mapel).filter(Boolean));
+        const sel = document.getElementById('questionFilterMapel');
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">Semua Mapel</option>';
+        [...mapelSet].sort().forEach(m => {
+            const o = document.createElement('option'); o.value = m; o.textContent = m;
+            if (m === cur) o.selected = true;
+            sel.appendChild(o);
+        });
+        filterQuestions();
+    });
 
-        function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+    // Scores
+    unsubScores = db.collection('scores').onSnapshot(snap => {
+        const tbody = document.getElementById('scoresBody');
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada data nilai</td></tr>'; return; }
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const s = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:600;">${s.nama || '-'}</td>
+                <td style="color:var(--text-2);">${s.nisn || '-'}</td>
+                <td>${s.kelas || '-'}</td>
+                <td>${s.mapel || '-'}</td>
+                <td><span style="font-weight:700;color:${(s.nilai||0)>=75?'#059669':'#dc2626'}">${s.nilai ?? '-'}</span></td>
+                <td><button class="btn btn-red btn-sm" onclick="deleteScore('${doc.id}')"><i class="fas fa-trash"></i></button></td>`;
+            tbody.appendChild(tr);
+        });
+    });
 
-        function showAddUserModal() {
-    document.getElementById('userModalTitle').innerText = 'Tambah User';
+    // Logs
+    unsubLogs = db.collection('logs').orderBy('timestamp','desc').limit(200).onSnapshot(snap => {
+        const tbody = document.getElementById('logsBody');
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Belum ada log</td></tr>'; return; }
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const l = doc.data();
+            const time = l.timestamp?.toDate ? new Date(l.timestamp.toDate()).toLocaleString('id-ID') : '-';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="color:var(--text-2);font-size:12px;">${time}</td>
+                <td style="font-weight:600;">${l.username || l.email || l.userId || '-'}</td>
+                <td>${l.role ? `<span class="badge badge-blue">${l.role}</span>` : '-'}</td>
+                <td>${l.action || '-'}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
+
+    // Banned devices
+    unsubBanned = db.collection('banned_devices').onSnapshot(snap => {
+        const tbody = document.getElementById('bannedBody');
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Tidak ada perangkat diblokir</td></tr>'; return; }
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const b = doc.data();
+            const date = b.createdAt?.toDate ? new Date(b.createdAt.toDate()).toLocaleDateString('id-ID') : '-';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-family:monospace;font-size:12px;color:var(--text-2);">${(b.fingerprint||'').substring(0,32)}...</td>
+                <td>${b.reason || 'Pelanggaran'}</td>
+                <td style="color:var(--text-2);">${date}</td>
+                <td><button class="btn btn-emerald btn-sm" onclick="unbanDevice('${doc.id}')"><i class="fas fa-check"></i> Unban</button></td>`;
+            tbody.appendChild(tr);
+        });
+    });
+
+    // Settings
+    db.collection('settings').doc('general').onSnapshot(snap => {
+        if (snap.exists) document.getElementById('maxSubjectsPerDay').value = snap.data().maxSubjectsPerDay || 4;
+    });
+}
+
+// ==================== RENDER USERS ====================
+function renderUsers() {
+    const tbody = document.getElementById('usersBody');
+    if (allUsers.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada user</td></tr>'; return; }
+    tbody.innerHTML = '';
+    allUsers.forEach(u => {
+        const roleMap = { admin:'badge-indigo', guru:'badge-blue', user:'badge-green' };
+        const date = u.createdAt?.toDate ? new Date(u.createdAt.toDate()).toLocaleDateString('id-ID') : '-';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:600;">${u.username || '-'}</td>
+            <td><span class="badge ${roleMap[u.role]||'badge-green'}">${u.role||'user'}</span></td>
+            <td>${u.banned ? '<span class="badge badge-red">Diblokir</span>' : '<span class="badge badge-green">Aktif</span>'}</td>
+            <td style="color:var(--text-2);font-size:12px;">${date}</td>
+            <td>
+                <button class="btn btn-gray btn-sm" onclick="openEditUserModal('${u.id}','${u.username}','${u.role}')"><i class="fas fa-edit"></i></button>
+                ${!u.banned ? `<button class="btn btn-amber btn-sm" onclick="banUser('${u.id}')"><i class="fas fa-ban"></i></button>` : `<button class="btn btn-emerald btn-sm" onclick="unbanUser('${u.id}')"><i class="fas fa-check"></i></button>`}
+                <button class="btn btn-red btn-sm" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ==================== RENDER QUESTIONS ====================
+function filterQuestions() {
+    const search = (document.getElementById('questionSearch')?.value || '').toLowerCase();
+    const mapelFilter = document.getElementById('questionFilterMapel')?.value || '';
+    const filtered = allQuestions.filter(q => {
+        if (mapelFilter && q.mapel !== mapelFilter) return false;
+        if (search) return `${q.mapel} ${q.kelas} ${q.text} ${q.hari}`.toLowerCase().includes(search);
+        return true;
+    });
+    const tbody = document.getElementById('questionsBody');
+    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Tidak ada soal ditemukan</td></tr>'; return; }
+    tbody.innerHTML = '';
+    filtered.forEach(q => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:600;">${q.mapel||'-'}</td>
+            <td>${q.kelas||'-'}</td>
+            <td style="text-align:center;">${q.nomor||'-'}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2);">${(q.text||'').substring(0,50)}${q.text?.length>50?'...':''}</td>
+            <td><span class="badge ${q.type==='pilihan_ganda'?'badge-green':'badge-amber'}">${q.type==='pilihan_ganda'?'Pilgan':'Multi'}</span></td>
+            <td>${q.aktif!==false?'<span class="badge badge-green">Aktif</span>':'<span class="badge badge-red">Nonaktif</span>'}</td>
+            <td style="display:flex;gap:6px;">
+                <button class="btn btn-gray btn-sm" onclick="openEditQuestionModal('${q.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-red btn-sm" onclick="deleteQuestion('${q.id}')"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ==================== USER MODAL ====================
+function openUserModal() {
+    document.getElementById('userModalTitle').textContent = 'Tambah User';
     document.getElementById('editUserId').value = '';
     document.getElementById('userUsername').value = '';
     document.getElementById('userUsername').disabled = false;
     document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').placeholder = 'Minimal 6 karakter';
+    document.getElementById('passHint').textContent = '(min. 6 karakter)';
     document.getElementById('userRole').value = 'user';
-    document.getElementById('userModal').classList.remove('hidden');
-    document.getElementById('userModal').classList.add('flex');
+    document.getElementById('userModal').classList.add('open');
 }
-
-        async function editUser(userId, username, role) {
-    document.getElementById('userModalTitle').innerText = 'Edit User';
-    document.getElementById('editUserId').value = userId;
+function openEditUserModal(id, username, role) {
+    document.getElementById('userModalTitle').textContent = 'Edit User';
+    document.getElementById('editUserId').value = id;
     document.getElementById('userUsername').value = username;
     document.getElementById('userUsername').disabled = true;
     document.getElementById('userPassword').value = '';
-    document.getElementById('userPassword').placeholder = 'Kosongkan jika tidak ingin mengganti password';
+    document.getElementById('userPassword').placeholder = 'Kosongkan jika tidak ingin ganti password';
+    document.getElementById('passHint').textContent = '(kosongkan jika tidak ingin ganti)';
     document.getElementById('userRole').value = role;
-    document.getElementById('userModal').classList.remove('hidden');
-    document.getElementById('userModal').classList.add('flex');
+    document.getElementById('userModal').classList.add('open');
 }
 
-        async function saveUser() {
+async function saveUser() {
     const username = document.getElementById('userUsername').value.trim();
     const password = document.getElementById('userPassword').value;
     const role = document.getElementById('userRole').value;
     const editId = document.getElementById('editUserId').value;
-    
-    // VALIDASI
-    if (!username) {
-        Swal.fire('Error', 'Username harus diisi!', 'error');
-        return;
-    }
-    if (username.length < 3) {
-        Swal.fire('Error', 'Username minimal 3 karakter!', 'error');
-        return;
-    }
-    
-    // EDIT USER (ganti role)
+
+    if (!username || username.length < 3) { Swal.fire('Error','Username minimal 3 karakter','error'); return; }
+
     if (editId) {
-        Swal.fire({ title: 'Mengupdate user...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        // Edit: hanya update role
         try {
-            await db.collection('users').doc(editId).update({ 
-                role: role, 
-                updatedAt: new Date() 
-            });
-            Swal.fire('Sukses', `User ${username} berhasil diupdate`, 'success');
+            await db.collection('users').doc(editId).update({ role, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            Swal.fire({ icon:'success', title:'Berhasil', text:'User diupdate', timer:1500, showConfirmButton:false });
             closeModal('userModal');
-            await loadUsers();
-        } catch (error) {
-            Swal.fire('Error', error.message, 'error');
-        }
+        } catch(e) { Swal.fire('Error', e.message, 'error'); }
         return;
     }
-    
-    // TAMBAH USER BARU
-    if (!password || password.length < 6) {
-        Swal.fire('Error', 'Password minimal 6 karakter!', 'error');
-        return;
-    }
-    
-    Swal.fire({ title: 'Memeriksa username...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-    
+
+    // Tambah baru
+    if (!password || password.length < 6) { Swal.fire('Error','Password minimal 6 karakter','error'); return; }
+
+    Swal.fire({ title:'Memproses...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
     try {
-        // Cek username sudah ada?
-        const cekUsername = await db.collection('users').where('username', '==', username).get();
-        if (!cekUsername.empty) {
-            Swal.fire('Error', `Username ${username} sudah terdaftar!`, 'error');
-            return;
-        }
-        
-        // Buat email dummy untuk auth (username@psas.local)
-        const dummyEmail = `${username}@psas.local`;
-        
-        // Buat user di Authentication
-        const userCred = await auth.createUserWithEmailAndPassword(dummyEmail, password);
-        
-        // Simpan ke Firestore (tanpa email)
-        await db.collection('users').doc(userCred.user.uid).set({
-            username: username,
-            role: role,
-            createdAt: new Date(),
+        const existing = await db.collection('users').where('username','==',username).limit(1).get();
+        if (!existing.empty) { Swal.fire('Error',`Username "${username}" sudah terdaftar`,'error'); return; }
+
+        const email = `${username}@psas.local`;
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+
+        await db.collection('users').doc(cred.user.uid).set({
+            username, role, email,  // simpan email agar login bisa pakai
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             banned: false
         });
-        
-        // Catat log
+
         await db.collection('logs').add({
-            userId: currentUser.uid,
-            admin: currentUser.email,
-            action: 'create_user',
-            targetUsername: username,
-            targetRole: role,
-            timestamp: new Date()
+            userId: currentUser.uid, username: currentUser.email,
+            action: 'create_user', targetUsername: username, targetRole: role,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        
-        Swal.fire('Sukses', `User ${username} (${role}) berhasil ditambahkan`, 'success');
+
+        Swal.fire({ icon:'success', title:'Berhasil', text:`User ${username} ditambahkan`, timer:2000, showConfirmButton:false });
         closeModal('userModal');
-        await loadUsers();
-        
-    } catch (error) {
-        let errorMessage = error.message;
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'Username sudah terdaftar di sistem.';
-        }
-        Swal.fire('Error', errorMessage, 'error');
+    } catch(e) {
+        const msg = e.code === 'auth/email-already-in-use' ? `Username "${username}" sudah ada di sistem` : e.message;
+        Swal.fire('Error', msg, 'error');
     }
 }
 
-        async function banUser(userId) {
-            const result = await Swal.fire({ title: 'Ban User?', text: 'User tidak akan bisa login', icon: 'warning', showCancelButton: true });
-            if (result.isConfirmed) { await db.collection('users').doc(userId).update({ banned: true }); Swal.fire('Sukses', 'User diblokir', 'success'); loadUsers(); }
+async function banUser(id) {
+    const r = await Swal.fire({ title:'Ban User?', text:'User tidak dapat login', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626' });
+    if (r.isConfirmed) { await db.collection('users').doc(id).update({ banned: true }); }
+}
+async function unbanUser(id) {
+    await db.collection('users').doc(id).update({ banned: false });
+    Swal.fire({ icon:'success', title:'User diaktifkan kembali', timer:1500, showConfirmButton:false });
+}
+async function deleteUser(id) {
+    const r = await Swal.fire({ title:'Hapus User?', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626' });
+    if (r.isConfirmed) { await db.collection('users').doc(id).delete(); Swal.fire({ icon:'success', title:'User dihapus', timer:1500, showConfirmButton:false }); }
+}
+
+// ==================== QUESTION MODAL ====================
+function openQuestionModal() {
+    document.getElementById('questionModalTitle').textContent = 'Tambah Soal';
+    document.getElementById('editQuestionId').value = '';
+    ['questionMapel','questionKelas','questionHari','questionNomor','questionText','questionA','questionB','questionC','questionD','questionE','questionAnswer'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('questionType').value = 'pilihan_ganda';
+    document.getElementById('questionActive').checked = true;
+    document.getElementById('questionModal').classList.add('open');
+}
+async function openEditQuestionModal(id) {
+    const q = allQuestions.find(q => q.id === id);
+    if (!q) return;
+    document.getElementById('questionModalTitle').textContent = 'Edit Soal';
+    document.getElementById('editQuestionId').value = id;
+    document.getElementById('questionMapel').value = q.mapel || '';
+    document.getElementById('questionKelas').value = q.kelas || '';
+    document.getElementById('questionHari').value = q.hari || '';
+    document.getElementById('questionNomor').value = q.nomor || '';
+    document.getElementById('questionText').value = q.text || '';
+    document.getElementById('questionA').value = q.pilihan?.A || '';
+    document.getElementById('questionB').value = q.pilihan?.B || '';
+    document.getElementById('questionC').value = q.pilihan?.C || '';
+    document.getElementById('questionD').value = q.pilihan?.D || '';
+    document.getElementById('questionE').value = q.pilihan?.E || '';
+    document.getElementById('questionType').value = q.type || 'pilihan_ganda';
+    document.getElementById('questionAnswer').value = q.jawaban?.join(',') || '';
+    document.getElementById('questionActive').checked = q.aktif !== false;
+    document.getElementById('questionModal').classList.add('open');
+}
+
+async function saveQuestion() {
+    const id = document.getElementById('editQuestionId').value;
+    const data = {
+        mapel: document.getElementById('questionMapel').value.trim(),
+        kelas: document.getElementById('questionKelas').value.trim(),
+        hari: document.getElementById('questionHari').value.trim(),
+        nomor: parseInt(document.getElementById('questionNomor').value) || 0,
+        text: document.getElementById('questionText').value.trim(),
+        pilihan: {
+            A: document.getElementById('questionA').value.trim(),
+            B: document.getElementById('questionB').value.trim(),
+            C: document.getElementById('questionC').value.trim(),
+            D: document.getElementById('questionD').value.trim(),
+            E: document.getElementById('questionE').value.trim(),
+        },
+        type: document.getElementById('questionType').value,
+        jawaban: document.getElementById('questionAnswer').value.split(',').map(s => s.trim()).filter(Boolean),
+        aktif: document.getElementById('questionActive').checked,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (!data.mapel || !data.text) { Swal.fire('Error','Mapel dan isi soal wajib diisi','error'); return; }
+    try {
+        if (id) {
+            await db.collection('questions').doc(id).update(data);
+        } else {
+            await db.collection('questions').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
         }
+        Swal.fire({ icon:'success', title:'Berhasil', text:id?'Soal diupdate':'Soal ditambahkan', timer:1500, showConfirmButton:false });
+        closeModal('questionModal');
+    } catch(e) { Swal.fire('Error', e.message, 'error'); }
+}
 
-        async function deleteUser(userId) {
-            const result = await Swal.fire({ title: 'Hapus User?', icon: 'warning', showCancelButton: true });
-            if (result.isConfirmed) { await db.collection('users').doc(userId).delete(); Swal.fire('Terhapus', 'User dihapus', 'success'); loadUsers(); }
-        }
+async function deleteQuestion(id) {
+    const r = await Swal.fire({ title:'Hapus Soal?', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626' });
+    if (r.isConfirmed) { await db.collection('questions').doc(id).delete(); }
+}
 
-        function showAddQuestionModal() {
-            document.getElementById('questionModalTitle').innerText = 'Tambah Soal';
-            document.getElementById('editQuestionId').value = '';
-            ['questionMapel','questionKelas','questionHari','questionNomor','questionText','questionA','questionB','questionC','questionD','questionE','questionAnswer'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('questionType').value = 'pilihan_ganda';
-            document.getElementById('questionActive').checked = true;
-            document.getElementById('questionModal').classList.remove('hidden');
-            document.getElementById('questionModal').classList.add('flex');
-        }
+// ==================== SCORES ====================
+async function deleteScore(id) {
+    const r = await Swal.fire({ title:'Hapus Nilai?', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626' });
+    if (r.isConfirmed) { await db.collection('scores').doc(id).delete(); }
+}
 
-        async function editQuestion(id) {
-            const doc = await db.collection('questions').doc(id).get();
-            const q = doc.data();
-            document.getElementById('questionModalTitle').innerText = 'Edit Soal';
-            document.getElementById('editQuestionId').value = id;
-            document.getElementById('questionMapel').value = q.mapel || '';
-            document.getElementById('questionKelas').value = q.kelas || '';
-            document.getElementById('questionHari').value = q.hari || '';
-            document.getElementById('questionNomor').value = q.nomor || '';
-            document.getElementById('questionText').value = q.text || '';
-            document.getElementById('questionA').value = q.pilihan?.A || '';
-            document.getElementById('questionB').value = q.pilihan?.B || '';
-            document.getElementById('questionC').value = q.pilihan?.C || '';
-            document.getElementById('questionD').value = q.pilihan?.D || '';
-            document.getElementById('questionE').value = q.pilihan?.E || '';
-            document.getElementById('questionType').value = q.type || 'pilihan_ganda';
-            document.getElementById('questionAnswer').value = q.jawaban?.join(',') || '';
-            document.getElementById('questionActive').checked = q.aktif !== false;
-            document.getElementById('questionModal').classList.remove('hidden');
-            document.getElementById('questionModal').classList.add('flex');
-        }
+// ==================== BANNED ====================
+async function unbanDevice(id) {
+    await db.collection('banned_devices').doc(id).delete();
+    Swal.fire({ icon:'success', title:'Perangkat diunban', timer:1500, showConfirmButton:false });
+}
 
-        async function saveQuestion() {
-            const id = document.getElementById('editQuestionId').value;
-            const data = {
-                mapel: document.getElementById('questionMapel').value,
-                kelas: document.getElementById('questionKelas').value,
-                hari: document.getElementById('questionHari').value,
-                nomor: parseInt(document.getElementById('questionNomor').value) || 0,
-                text: document.getElementById('questionText').value,
-                pilihan: { A: document.getElementById('questionA').value, B: document.getElementById('questionB').value, C: document.getElementById('questionC').value, D: document.getElementById('questionD').value, E: document.getElementById('questionE').value },
-                type: document.getElementById('questionType').value,
-                jawaban: document.getElementById('questionAnswer').value.split(',').map(s => s.trim()),
-                aktif: document.getElementById('questionActive').checked,
-                updatedAt: new Date()
-            };
-            if (id) { await db.collection('questions').doc(id).update(data); Swal.fire('Sukses', 'Soal diupdate', 'success'); }
-            else { await db.collection('questions').add({ ...data, createdAt: new Date() }); Swal.fire('Sukses', 'Soal ditambahkan', 'success'); }
-            closeModal('questionModal');
-            loadQuestions();
-        }
+// ==================== SETTINGS ====================
+async function updateSetting(key) {
+    const val = document.getElementById(key).value;
+    await db.collection('settings').doc('general').set({ [key]: isNaN(val) ? val : Number(val) }, { merge: true });
+    Swal.fire({ icon:'success', title:'Pengaturan disimpan', timer:1500, showConfirmButton:false });
+}
 
-        async function deleteQuestion(id) {
-            const result = await Swal.fire({ title: 'Hapus Soal?', icon: 'warning', showCancelButton: true });
-            if (result.isConfirmed) { await db.collection('questions').doc(id).delete(); Swal.fire('Terhapus', 'Soal dihapus', 'success'); loadQuestions(); }
-        }
+// ==================== IMPORT/EXPORT ====================
+function importQuestionsExcel() {
+    const input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
+    input.onchange = async e => {
+        const file = e.target.files[0]; const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab); const sheet = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(sheet);
+        Swal.fire({ title:`Import ${rows.length} soal?`, icon:'question', showCancelButton:true, confirmButtonColor:'#4f46e5' }).then(async r => {
+            if (!r.isConfirmed) return;
+            for (const row of rows) {
+                await db.collection('questions').add({
+                    mapel: row.Mapel||'', kelas: row.Kelas||'', hari: row.Hari||'',
+                    nomor: Number(row.Nomor)||0, text: row.Soal||'',
+                    pilihan: { A:row.A||'', B:row.B||'', C:row.C||'', D:row.D||'', E:row.E||'' },
+                    type: row.Jenis||'pilihan_ganda',
+                    jawaban: row.Jawaban ? String(row.Jawaban).split(',').map(s=>s.trim()) : [],
+                    aktif: true, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            Swal.fire({ icon:'success', title:`${rows.length} soal diimport`, timer:2000, showConfirmButton:false });
+        });
+    };
+    input.click();
+}
 
-        async function deleteScore(id) {
-            const result = await Swal.fire({ title: 'Hapus Nilai?', icon: 'warning', showCancelButton: true });
-            if (result.isConfirmed) { await db.collection('scores').doc(id).delete(); Swal.fire('Terhapus', 'Nilai dihapus', 'success'); loadScores(); }
-        }
+function exportQuestionsExcel() {
+    const data = allQuestions.map(q => ({ Mapel:q.mapel, Kelas:q.kelas, Hari:q.hari, Nomor:q.nomor, Soal:q.text, A:q.pilihan?.A, B:q.pilihan?.B, C:q.pilihan?.C, D:q.pilihan?.D, E:q.pilihan?.E, Jenis:q.type, Jawaban:q.jawaban?.join(',') }));
+    const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Soal');
+    XLSX.writeFile(wb, `soal_psas_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
 
-        async function unbanDevice(id) { await db.collection('banned_devices').doc(id).delete(); Swal.fire('Sukses', 'Perangkat diunban', 'success'); loadBannedDevices(); }
-        
-        async function updateSetting(setting) { const value = document.getElementById(setting).value; await db.collection('settings').doc('general').set({ [setting]: value }, { merge: true }); Swal.fire('Sukses', 'Pengaturan disimpan', 'success'); }
+function importScoresExcel() {
+    const input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
+    input.onchange = async e => {
+        const file = e.target.files[0]; const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        for (const row of rows) await db.collection('scores').add({ nama:row.Nama, nisn:row.NISN, kelas:row.Kelas, mapel:row.Mapel, nilai:Number(row.Nilai)||0, keterangan:row.Keterangan||'', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+        Swal.fire({ icon:'success', title:`${rows.length} nilai diimport`, timer:1500, showConfirmButton:false });
+    };
+    input.click();
+}
 
-        // Import Export Functions
-        async function importQuestionsExcel() {
-            const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv';
-            input.onchange = async (e) => {
-                const file = e.target.files[0]; const data = await file.arrayBuffer(); const workbook = XLSX.read(data); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(sheet);
-                for (const row of rows) { await db.collection('questions').add({ mapel: row.Mapel, kelas: row.Kelas, hari: row.Hari, nomor: row.Nomor, text: row.Soal, pilihan: { A: row.A, B: row.B, C: row.C, D: row.D, E: row.E }, type: row.Jenis, jawaban: row.Jawaban ? row.Jawaban.split(',') : [], aktif: true, createdAt: new Date() }); }
-                Swal.fire('Sukses', `${rows.length} soal diimport`, 'success'); loadQuestions();
-            }; input.click();
-        }
+async function exportScoresExcel() {
+    const snap = await db.collection('scores').get();
+    const data = snap.docs.map(d => { const s=d.data(); return { Nama:s.nama, NISN:s.nisn, Kelas:s.kelas, Mapel:s.mapel, Nilai:s.nilai, Keterangan:s.keterangan }; });
+    const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Nilai');
+    XLSX.writeFile(wb, `nilai_psas_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
 
-        async function exportQuestionsExcel() {
-            const questions = await db.collection('questions').get(); const data = [];
-            questions.forEach(doc => { const q = doc.data(); data.push({ Mapel: q.mapel, Kelas: q.kelas, Hari: q.hari, Nomor: q.nomor, Soal: q.text, A: q.pilihan?.A, B: q.pilihan?.B, C: q.pilihan?.C, D: q.pilihan?.D, E: q.pilihan?.E, Jenis: q.type, Jawaban: q.jawaban?.join(',') }); });
-            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Soal'); XLSX.writeFile(wb, `soal_${new Date().toISOString()}.xlsx`);
-        }
+async function backupDatabase() {
+    const colls = ['users','questions','scores','logs','banned_devices','settings']; const backup = {};
+    for (const c of colls) { const s=await db.collection(c).get(); backup[c]=s.docs.map(d=>({id:d.id,...d.data()})); }
+    const blob = new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup_psas_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    Swal.fire({ icon:'success', title:'Backup berhasil', timer:1500, showConfirmButton:false });
+}
 
-        async function importScoresExcel() {
-            const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv';
-            input.onchange = async (e) => {
-                const file = e.target.files[0]; const data = await file.arrayBuffer(); const workbook = XLSX.read(data); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(sheet);
-                for (const row of rows) { await db.collection('scores').add({ nama: row.Nama, nisn: row.NISN, kelas: row.Kelas, mapel: row.Mapel, nilai: row.Nilai, keterangan: row.Keterangan, createdAt: new Date() }); }
-                Swal.fire('Sukses', `${rows.length} nilai diimport`, 'success'); loadScores();
-            }; input.click();
-        }
+async function restoreDatabase() {
+    const r = await Swal.fire({ title:'Restore Database?', text:'Data yang ada akan ditimpa!', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626' });
+    if (!r.isConfirmed) return;
+    const input = document.createElement('input'); input.type='file'; input.accept='.json';
+    input.onchange = async e => {
+        const text = await e.target.files[0].text(); const backup = JSON.parse(text);
+        for (const [coll, items] of Object.entries(backup)) for (const item of items) await db.collection(coll).doc(item.id).set(item);
+        Swal.fire({ icon:'success', title:'Restore berhasil', confirmButtonColor:'#4f46e5' }).then(() => location.reload());
+    };
+    input.click();
+}
 
-        async function exportScoresExcel() {
-            const scores = await db.collection('scores').get(); const data = [];
-            scores.forEach(doc => { const s = doc.data(); data.push({ Nama: s.nama, NISN: s.nisn, Kelas: s.kelas, Mapel: s.mapel, Nilai: s.nilai, Keterangan: s.keterangan }); });
-            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Nilai'); XLSX.writeFile(wb, `nilai_${new Date().toISOString()}.xlsx`);
-        }
-
-        async function backupDatabase() {
-            const collections = ['users', 'questions', 'scores', 'logs', 'banned_devices', 'settings']; const backup = {};
-            for (const coll of collections) { const snap = await db.collection(coll).get(); backup[coll] = []; snap.forEach(doc => backup[coll].push({ id: doc.id, ...doc.data() })); }
-            const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup_psas_${new Date().toISOString()}.json`; a.click(); URL.revokeObjectURL(url); Swal.fire('Sukses', 'Backup berhasil', 'success');
-        }
-
-        async function restoreDatabase() {
-            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0]; const text = await file.text(); const backup = JSON.parse(text);
-                for (const [coll, data] of Object.entries(backup)) { for (const item of data) { await db.collection(coll).doc(item.id).set(item); } }
-                Swal.fire('Sukses', 'Restore berhasil', 'success'); location.reload();
-            }; input.click();
-        }
-
-        function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.getElementById(modalId).classList.remove('flex');
-    if (modalId === 'userModal') {
-        document.getElementById('userModalTitle').innerText = 'Tambah User';
-        document.getElementById('editUserId').value = '';
-        document.getElementById('userUsername').value = '';
-        document.getElementById('userUsername').disabled = false;
-        document.getElementById('userPassword').value = '';
-        document.getElementById('userRole').value = 'user';
+// ==================== SECTION NAV ====================
+function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`${name}Section`).classList.add('active');
+    document.querySelectorAll('#sidebar .nav-item').forEach(n => n.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    else {
+        // Sidebar auto-highlight
+        const map = { dashboard:0, users:1, questions:2, scores:3, logs:4, banned:5, settings:6 };
+        const items = document.querySelectorAll('#sidebar .nav-item');
+        if (items[map[name]]) items[map[name]].classList.add('active');
     }
 }
 
-        async function logout() { await auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; }
+function setMobileNav(section) {
+    document.querySelectorAll('.m-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`mn${section}`)?.classList.add('active');
+}
 
-        // Security
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('copy', e => e.preventDefault());
-        document.addEventListener('keydown', e => { if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) { e.preventDefault(); Swal.fire('Peringatan!', 'Akses ditolak', 'warning'); } });
+// ==================== MODAL HELPERS ====================
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-        if (initFirebase()) checkAuth();
-        setTimeout(() => { document.querySelector('.nav-item')?.classList.add('active'); }, 100);
-    </script>
+// ==================== LOGOUT ====================
+async function logout() {
+    [unsubUsers, unsubQuestions, unsubScores, unsubLogs, unsubBanned, unsubDash].forEach(u => u?.());
+    await auth.signOut();
+    sessionStorage.clear();
+    location.href = 'index.html';
+}
+
+// ==================== SECURITY ====================
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.key==='F12' || (e.ctrlKey && e.shiftKey && ['I','J'].includes(e.key))) e.preventDefault();
+});
+
+// ==================== INIT ====================
+if (initFirebase()) checkAuth();
+</script>
 </body>
 </html>
