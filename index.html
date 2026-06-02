@@ -4,614 +4,590 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PSAS Preview System</title>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            user-select: none;
-            -webkit-user-select: none;
+        :root {
+            --bg: #f1f5f9; --surface: #ffffff; --border: #e2e8f0;
+            --text: #0f172a; --text-2: #64748b; --text-3: #94a3b8;
+            --primary: #4f46e5; --primary-light: #ede9fe;
         }
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        .dark {
+            --bg: #0f172a; --surface: #1e293b; --border: #334155;
+            --text: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+            --primary-light: #1e1b4b;
         }
-        .toast-notif {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10000;
-        }
-        /* Dark Mode */
-        body.dark-mode {
-            background: #1a1a2e;
-            color: #eee;
-        }
-        body.dark-mode .bg-white {
-            background: #16213e;
-            color: #eee;
-        }
-        body.dark-mode .border {
-            border-color: #2d3748;
-        }
-        body.dark-mode .bg-gray-100 {
-            background: #0f0f1a;
-        }
-        body.dark-mode .bg-gray-50 {
-            background: #1a1a2e;
-        }
-        body.dark-mode .text-gray-600, 
-        body.dark-mode .text-gray-700,
-        body.dark-mode .text-gray-800 {
-            color: #ccc;
-        }
-        /* Modal Rules */
-        .modal-rules {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .animate-slide {
-            animation: slideDown 0.3s ease;
-        }
-        @keyframes slideDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .page {
-            display: none;
-        }
-        .page.active {
-            display: block;
-        }
-        .nav-active {
-            background: #e0e7ff;
-            color: #1e40af;
-        }
-        .question-card {
-            transition: all 0.2s ease;
-        }
-        .question-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-        }
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; user-select: none; -webkit-user-select: none; }
+        .page { display: none; }
+        .page.active { display: block; min-height: 100vh; }
+        .surface { background: var(--surface); border: 1px solid var(--border); }
+        .text-muted { color: var(--text-2); }
+        .text-subtle { color: var(--text-3); }
+
+        /* Rules Modal */
+        #rulesModal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        #rulesModal.hidden { display: none; }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes pop { from { opacity:0; transform: scale(0.9); } to { opacity:1; transform: scale(1); } }
+
+        /* Login */
+        .login-bg { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .login-card { background: white; border-radius: 20px; overflow: hidden; width: 100%; max-width: 420px; box-shadow: 0 25px 60px rgba(0,0,0,0.35); }
+        .dark .login-card { background: #1e293b; }
+        .role-btn { padding: 8px 4px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; flex: 1; background: var(--bg); color: var(--text-2); transition: all 0.15s; }
+        .role-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.35); }
+        .inp { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.15s; }
+        .inp:focus { border-color: var(--primary); }
+        .inp::placeholder { color: var(--text-3); }
+        .btn-primary { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: white; border: none; border-radius: 10px; padding: 13px; font-weight: 700; font-size: 15px; cursor: pointer; width: 100%; transition: all 0.15s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.4); }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Navbar */
+        .navbar { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 40; }
+        .navbar-title { font-weight: 800; font-size: 18px; }
+        @media (max-width: 480px) { .navbar-title { font-size: 15px; } }
+
+        /* Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+        .question-card { transition: transform 0.15s, box-shadow 0.15s; }
+        .question-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+        .badge-blue { background: #dbeafe; color: #1d4ed8; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-purple { background: #ede9fe; color: #5b21b6; }
+        .badge-orange { background: #ffedd5; color: #9a3412; }
+        .dark .badge-blue { background: #1e3a5f; color: #93c5fd; }
+        .dark .badge-green { background: #052e16; color: #6ee7b7; }
+        .dark .badge-purple { background: #2e1065; color: #c4b5fd; }
+        .dark .badge-orange { background: #431407; color: #fdba74; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; display: none; align-items: flex-start; justify-content: center; padding: 1rem; overflow-y: auto; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--surface); border-radius: 16px; padding: 24px; width: 100%; max-width: 720px; margin: auto; animation: pop 0.2s ease; }
+
+        /* Real-time indicator */
+        .rt-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; display: inline-block; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Schedule item */
+        .schedule-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--bg); border-radius: 10px; gap: 10px; flex-wrap: wrap; }
+
+        /* Loading */
+        #loadingScreen { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9998; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+        .dark #loadingScreen { background: rgba(15,23,42,0.9); }
+        #loadingScreen.hidden { display: none; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
 
-<!-- ==================== MODAL PERATURAN ==================== -->
-<div id="rulesModal" class="modal-rules">
-    <div class="bg-white rounded-2xl max-w-2xl mx-4 p-8 shadow-2xl animate-slide">
+<!-- Loading -->
+<div id="loadingScreen" class="hidden">
+    <div class="spinner"></div>
+    <p class="text-muted text-sm font-medium">Memuat sistem...</p>
+</div>
+
+<!-- Modal Peraturan -->
+<div id="rulesModal">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 sm:p-8 animate-pop" style="background: white; border-radius: 20px; max-width: 500px; width: 100%; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.4);">
         <div class="text-center mb-6">
-            <i class="fas fa-shield-alt text-6xl text-red-600 mb-4"></i>
-            <h2 class="text-2xl font-bold text-gray-800">Peraturan dan Kerahasiaan Sistem</h2>
-            <div class="h-1 w-20 bg-red-600 mx-auto mt-2 rounded"></div>
+            <div style="width:64px;height:64px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <i class="fas fa-shield-alt text-white text-2xl"></i>
+            </div>
+            <h2 style="font-size:22px;font-weight:800;color:#0f172a;margin-bottom:8px;">Peraturan & Kerahasiaan</h2>
+            <div style="width:40px;height:3px;background:#ef4444;margin:0 auto;border-radius:2px;"></div>
         </div>
-        <div class="space-y-3 text-gray-700 mb-8 max-h-96 overflow-y-auto">
-            <p><i class="fas fa-check-circle text-green-600 mr-2"></i> Soal merupakan dokumen akademik.</p>
-            <p><i class="fas fa-ban text-red-600 mr-2"></i> Dilarang menyebarluaskan isi soal.</p>
-            <p><i class="fas fa-money-bill-wave text-red-600 mr-2"></i> Dilarang memperjualbelikan isi soal.</p>
-            <p><i class="fas fa-database text-red-600 mr-2"></i> Dilarang melakukan pengambilan data tanpa izin.</p>
-            <p><i class="fas fa-camera text-red-600 mr-2"></i> Dilarang membagikan screenshot.</p>
-            <p><i class="fas fa-video text-red-600 mr-2"></i> Dilarang membagikan rekaman layar.</p>
-            <p><i class="fas fa-gavel text-red-600 mr-2"></i> Pelanggaran dapat menyebabkan akun diblokir permanen.</p>
-            <p><i class="fas fa-user-graduate text-blue-600 mr-2"></i> Pengguna wajib menjaga literasi digital dan etika penggunaan sistem.</p>
+        <div style="space-y:8px;margin-bottom:24px;max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-check-circle text-green-500 mr-2"></i>Soal merupakan dokumen akademik rahasia.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-ban text-red-500 mr-2"></i>Dilarang menyebarluaskan isi soal dalam bentuk apapun.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-money-bill-wave text-red-500 mr-2"></i>Dilarang memperjualbelikan isi soal.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-database text-red-500 mr-2"></i>Dilarang mengambil data tanpa izin resmi.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-camera text-red-500 mr-2"></i>Dilarang screenshot atau rekam layar.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-gavel text-red-500 mr-2"></i>Pelanggaran berakibat pemblokiran permanen.</p>
+            <p style="color:#374151;font-size:14px;"><i class="fas fa-user-graduate text-blue-500 mr-2"></i>Pengguna wajib menjaga etika digital.</p>
         </div>
-        <button onclick="acceptRules()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition">
-            <i class="fas fa-check-circle mr-2"></i> Saya Mengerti
+        <button onclick="acceptRules()" style="width:100%;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">
+            <i class="fas fa-check-circle mr-2"></i> Saya Mengerti & Setuju
         </button>
     </div>
 </div>
 
-<!-- ==================== LOADING ==================== -->
-<div id="loadingScreen" class="fixed inset-0 bg-white/90 z-50 hidden items-center justify-center">
-    <div class="text-center">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
-        <p>Memuat sistem...</p>
-    </div>
-</div>
-
-<!-- ==================== PAGE LOGIN ==================== -->
+<!-- PAGE LOGIN -->
 <div id="loginPage" class="page">
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 to-purple-900">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center">
-                <i class="fas fa-graduation-cap text-5xl text-white mb-2"></i>
-                <h2 class="text-2xl font-bold text-white">PSAS Preview System</h2>
-                <p class="text-blue-100 text-sm">Silahkan login untuk melanjutkan</p>
+    <div class="login-bg">
+        <div class="login-card">
+            <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:28px;text-align:center;">
+                <i class="fas fa-graduation-cap text-white" style="font-size:48px;margin-bottom:10px;"></i>
+                <h2 style="color:white;font-size:22px;font-weight:800;margin-bottom:4px;">PSAS Preview System</h2>
+                <p style="color:rgba(255,255,255,0.75);font-size:13px;">Masuk untuk melanjutkan</p>
             </div>
-            <div class="p-8">
-                <div class="mb-6">
-                    <div class="flex space-x-2">
-                        <button onclick="setRole('admin')" id="btnAdmin" class="flex-1 py-2 rounded-lg transition-all role-btn bg-gray-200 text-gray-700">Admin</button>
-                        <button onclick="setRole('guru')" id="btnGuru" class="flex-1 py-2 rounded-lg transition-all role-btn bg-gray-200 text-gray-700">Guru</button>
-                        <button onclick="setRole('user')" id="btnUser" class="flex-1 py-2 rounded-lg transition-all role-btn bg-blue-600 text-white">User</button>
-                    </div>
-                    <input type="hidden" id="selectedRole" value="user">
+            <div style="padding:28px;">
+                <div style="display:flex;gap:8px;margin-bottom:20px;">
+                    <button class="role-btn active" id="btnUser" onclick="setRole('user')">User</button>
+                    <button class="role-btn" id="btnGuru" onclick="setRole('guru')">Guru</button>
+                    <button class="role-btn" id="btnAdmin" onclick="setRole('admin')">Admin</button>
                 </div>
-                <div class="space-y-4">
-<div>
-    <label class="block text-gray-700 mb-2 text-sm font-semibold">Username</label>
-    <input type="text" id="loginUsername" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-</div>
-<div>
-    <label class="block text-gray-700 mb-2 text-sm font-semibold">Password</label>
-    <input type="password" id="loginPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-</div>
-                    <button onclick="doLogin()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Username</label>
+                        <input type="text" id="loginUsername" class="inp" placeholder="Masukkan username" autocomplete="username" onkeyup="if(event.key==='Enter')doLogin()">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Password</label>
+                        <input type="password" id="loginPassword" class="inp" placeholder="Masukkan password" autocomplete="current-password" onkeyup="if(event.key==='Enter')doLogin()">
+                    </div>
+                    <button class="btn-primary" onclick="doLogin()">
                         <i class="fas fa-sign-in-alt mr-2"></i> Login
                     </button>
                 </div>
-                <div class="mt-6 text-center text-xs text-gray-500">
-                    <i class="fas fa-shield-alt mr-1"></i> Sistem dilindungi keamanan tingkat tinggi
-                </div>
+                <p style="text-align:center;font-size:12px;color:var(--text-3);margin-top:16px;">
+                    <i class="fas fa-lock mr-1"></i> Sistem dilindungi enkripsi tingkat tinggi
+                </p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ==================== PAGE USER DASHBOARD ==================== -->
+<!-- PAGE USER DASHBOARD -->
 <div id="userPage" class="page">
-    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center flex-wrap">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-eye text-2xl"></i>
-                <span class="font-bold text-xl">PSAS Preview</span>
+    <nav class="navbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-eye"></i>
             </div>
-            <div class="flex items-center space-x-3">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-white/20">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <span id="userEmailDisplay" class="text-sm hidden md:inline"></span>
-                <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded-lg text-sm hover:bg-red-700">
-                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
-                </button>
+            <div>
+                <div class="navbar-title">PSAS Preview</div>
+                <div style="font-size:11px;opacity:0.75;display:flex;align-items:center;gap:5px;"><span class="rt-dot"></span>Real-time</div>
             </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="toggleDark()" style="background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;"><i class="fas fa-moon"></i></button>
+            <button onclick="logout()" style="background:#ef4444;border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;"><i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Logout</span></button>
         </div>
     </nav>
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4"><i class="fas fa-calendar-alt mr-2 text-blue-600"></i>Jadwal Ujian</h2>
-            <div id="scheduleList" class="space-y-2"></div>
+    <div style="max-width:800px;margin:0 auto;padding:20px 16px;display:flex;flex-direction:column;gap:20px;">
+        <div class="card">
+            <h2 style="font-weight:700;font-size:17px;margin-bottom:14px;"><i class="fas fa-calendar-alt mr-2" style="color:#4f46e5;"></i>Jadwal Ujian</h2>
+            <div id="scheduleList" style="display:flex;flex-direction:column;gap:8px;">
+                <p class="text-muted text-sm">Memuat jadwal...</p>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-xl font-bold mb-4"><i class="fas fa-book mr-2 text-green-600"></i>Daftar Mapel Aktif</h2>
-            <div id="subjectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        <div class="card">
+            <h2 style="font-weight:700;font-size:17px;margin-bottom:14px;"><i class="fas fa-book mr-2" style="color:#059669;"></i>Daftar Mapel Aktif</h2>
+            <div id="subjectsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;"></div>
         </div>
     </div>
 </div>
 
-<!-- ==================== PAGE GURU DASHBOARD ==================== -->
+<!-- PAGE GURU DASHBOARD -->
 <div id="guruPage" class="page">
-    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-chalkboard-teacher text-2xl"></i>
-                <span class="font-bold text-xl">PSAS Guru Panel</span>
+    <nav class="navbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-chalkboard-teacher"></i>
             </div>
-            <div class="flex items-center space-x-3">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-white/20">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <span id="guruEmailDisplay" class="text-sm hidden md:inline"></span>
-                <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded-lg text-sm hover:bg-red-700">
-                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
-                </button>
+            <div>
+                <div class="navbar-title">PSAS Guru Panel</div>
+                <div style="font-size:11px;opacity:0.75;display:flex;align-items:center;gap:5px;"><span class="rt-dot"></span>Real-time</div>
             </div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="toggleDark()" style="background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;"><i class="fas fa-moon"></i></button>
+            <button onclick="logout()" style="background:#ef4444;border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;"><i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Logout</span></button>
+        </div>
     </nav>
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-xl font-bold mb-4"><i class="fas fa-question-circle mr-2 text-blue-600"></i>Preview Soal (Guru) - Jawaban Terlihat</h2>
-            <div id="guruQuestionsList" class="space-y-4"></div>
+    <div style="max-width:900px;margin:0 auto;padding:20px 16px;">
+        <div class="card">
+            <h2 style="font-weight:700;font-size:17px;margin-bottom:16px;"><i class="fas fa-question-circle mr-2" style="color:#4f46e5;"></i>Preview Soal + Jawaban</h2>
+            <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="guruSearch" class="inp" placeholder="Cari soal, mapel, kelas..." style="max-width:280px;padding:8px 12px;" oninput="filterGuru()">
+                <select id="guruFilterMapel" class="inp" style="max-width:180px;padding:8px 12px;" onchange="filterGuru()">
+                    <option value="">Semua Mapel</option>
+                </select>
+            </div>
+            <div id="guruQuestionsList" style="display:flex;flex-direction:column;gap:12px;"></div>
         </div>
     </div>
 </div>
 
-<!-- ==================== MODAL PREVIEW SOAL ==================== -->
-<div id="previewModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto">
-    <div class="bg-white rounded-xl p-6 w-full max-w-3xl my-8">
-        <div class="flex justify-between items-center mb-4">
-            <h3 id="previewTitle" class="text-xl font-bold">Preview Soal</h3>
-            <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-2xl"></i>
-            </button>
+<!-- Modal Preview Soal (User) -->
+<div id="previewModal" class="modal-overlay" onclick="if(event.target===this)closePreviewModal()">
+    <div class="modal-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="previewTitle" style="font-weight:800;font-size:18px;">Preview Soal</h3>
+            <button onclick="closePreviewModal()" style="background:var(--bg);border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:16px;color:var(--text-2);">✕</button>
         </div>
-        <div id="previewContent" class="space-y-4 max-h-96 overflow-y-auto"></div>
+        <div id="previewContent" style="max-height:65vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;"></div>
     </div>
 </div>
 
 <script>
-    // ==================== GLOBAL VARIABLES ====================
-    let auth = null, db = null;
-    let currentUser = null, currentRole = null;
-    let selectedRole = 'user';
-    
-    /// ==================== FIREBASE INIT DENGAN ENV ====================
-// Konfigurasi Firebase diambil dari sessionStorage (disimpan saat setup)
-// Tidak ada hardcode config di kode!
+// ==================== STATE ====================
+let auth = null, db = null;
+let currentUser = null, currentRole = null;
+let selectedRole = 'user';
+let unsubscribeGuest = null;  // real-time listener cleanup
+let allGuruQuestions = [];
 
+// ==================== FIREBASE INIT ====================
 function getFirebaseConfig() {
-    // Prioritas 1: Dari sessionStorage (untuk sesi saat ini)
-    let configFromStorage = sessionStorage.getItem('psas_firebase_config');
-    
-    // Prioritas 2: Dari localStorage (permanen)
-    if (!configFromStorage) {
-        configFromStorage = localStorage.getItem('psas_firebase_config');
-    }
-    
-    if (configFromStorage) {
-        try {
-            return JSON.parse(atob(configFromStorage));
-        } catch(e) {
-            console.error('Gagal decrypt config');
-        }
-    }
-    
-    // Prioritas 3: Dari window._env_ (jika diinject server)
-    if (window._env_ && window._env_.FIREBASE_CONFIG) {
-        return window._env_.FIREBASE_CONFIG;
-    }
-    
-    // Jika tidak ada config sama sekali, arahkan ke halaman setup
-    Swal.fire({
-        title: 'Konfigurasi Firebase Belum Diatur',
-        text: 'Silakan lakukan setup konfigurasi Firebase terlebih dahulu',
-        icon: 'info',
-        confirmButtonText: 'Setup Sekarang'
-    }).then(() => {
-        window.location.href = 'setup-env.html';
-    });
-    
+    let raw = sessionStorage.getItem('psas_firebase_config') || localStorage.getItem('psas_firebase_config');
+    if (raw) { try { return JSON.parse(atob(raw)); } catch(e) {} }
+    if (window._env_?.FIREBASE_CONFIG) return window._env_.FIREBASE_CONFIG;
+    Swal.fire({ title:'Konfigurasi Belum Diatur', text:'Setup Firebase terlebih dahulu', icon:'info', confirmButtonText:'Setup', confirmButtonColor:'#4f46e5' })
+        .then(() => location.href = 'setup-env.html');
     return null;
 }
 
 function initFirebase() {
     const config = getFirebaseConfig();
     if (!config) return false;
-    
     try {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(config);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(config);
         auth = firebase.auth();
         db = firebase.firestore();
+        // Enable offline persistence
+        db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
         return true;
     } catch(e) {
-        console.error("Firebase init error:", e);
-        Swal.fire('Error', 'Gagal menginisialisasi Firebase. Periksa konfigurasi Anda.', 'error');
+        console.error('Firebase init error:', e);
+        Swal.fire('Error', 'Gagal init Firebase. Periksa konfigurasi.', 'error');
         return false;
     }
 }
-    
-    // ==================== KEAMANAN ====================
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('copy', e => e.preventDefault());
-    document.addEventListener('cut', e => e.preventDefault());
-    document.addEventListener('paste', e => e.preventDefault());
-    document.addEventListener('dragstart', e => e.preventDefault());
-    document.addEventListener('selectstart', e => e.preventDefault());
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || 
-            (e.ctrlKey && e.shiftKey && e.key === 'J') || (e.ctrlKey && e.key === 'u')) {
-            e.preventDefault();
-            Swal.fire('Peringatan!', 'Akses tidak diizinkan', 'warning');
-        }
-    });
-    
-    // Deteksi DevTools
-    setInterval(() => {
-        const start = performance.now();
-        debugger;
-        const end = performance.now();
-        if (end - start > 100) {
-            Swal.fire('Peringatan!', 'Developer Tools terdeteksi!', 'warning');
-        }
-    }, 5000);
-    
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
+
+// ==================== DARK MODE ====================
+function toggleDark() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('psas_dark', isDark ? '1' : '0');
+}
+if (localStorage.getItem('psas_dark') === '1') document.documentElement.classList.add('dark');
+
+// ==================== SECURITY ====================
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('copy', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.key==='F12' || (e.ctrlKey && e.shiftKey && ['I','J'].includes(e.key)) || (e.ctrlKey && e.key==='u')) {
+        e.preventDefault();
+        Swal.fire({ title:'Akses Ditolak', icon:'warning', timer:2000, showConfirmButton:false });
     }
-    
+});
+
+// ==================== RULES ====================
 function acceptRules() {
     sessionStorage.setItem('psas_rules_accepted', 'true');
-    document.getElementById('rulesModal').style.display = 'none';
-    
-    // Cek apakah sudah ada konfigurasi Firebase
+    document.getElementById('rulesModal').classList.add('hidden');
     const hasConfig = localStorage.getItem('psas_firebase_config') || sessionStorage.getItem('psas_firebase_config');
-    if (!hasConfig) {
-        window.location.href = 'setup-env.html';
-    } else {
-        showLoginPage();
-    }
+    if (!hasConfig) { location.href = 'setup-env.html'; return; }
+    showPage('loginPage');
 }
-    
-    // ==================== PAGE NAVIGATION ====================
-    function showLoginPage() {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('loginPage').classList.add('active');
-    }
-    
-    function showUserPage() {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('userPage').classList.add('active');
-        loadUserDashboard();
-    }
-    
-    function showGuruPage() {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('guruPage').classList.add('active');
-        loadGuruDashboard();
-    }
-    
-    // ==================== LOGIN ====================
-    function setRole(role) {
-        selectedRole = role;
-        document.querySelectorAll('.role-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
-            btn.classList.add('bg-gray-200', 'text-gray-700');
-        });
-        const btnMap = { admin: 'btnAdmin', guru: 'btnGuru', user: 'btnUser' };
-        document.getElementById(btnMap[role]).classList.remove('bg-gray-200', 'text-gray-700');
-        document.getElementById(btnMap[role]).classList.add('bg-blue-600', 'text-white');
-        document.getElementById('selectedRole').value = role;
-    }
-    
-    async function doLogin() {
+
+// ==================== PAGE NAV ====================
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ==================== ROLE TABS ====================
+function setRole(role) {
+    selectedRole = role;
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn' + role.charAt(0).toUpperCase() + role.slice(1)).classList.add('active');
+}
+
+// ==================== LOGIN ====================
+async function doLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    const role = selectedRole;
-    
     if (!username || !password) {
-        Swal.fire('Error', 'Username dan password harus diisi', 'error');
-        return;
+        Swal.fire({ title:'Lengkapi Form', text:'Username dan password harus diisi', icon:'warning', confirmButtonColor:'#4f46e5' }); return;
     }
-    
+    showLoading(true);
     try {
-        // Cari user berdasarkan username di Firestore
-        const userQuery = await db.collection('users').where('username', '==', username).get();
-        
-        if (userQuery.empty) {
-            Swal.fire('Error', 'Username tidak ditemukan', 'error');
-            return;
-        }
-        
-        const userDoc = userQuery.docs[0];
+        // Step 1: cari user di Firestore berdasarkan username
+        const snap = await db.collection('users').where('username', '==', username).limit(1).get();
+        if (snap.empty) { showLoading(false); Swal.fire('Login Gagal', 'Username tidak ditemukan', 'error'); return; }
+
+        const userDoc = snap.docs[0];
         const userData = userDoc.data();
-        const userId = userDoc.id;
-        
-        // Cek role
-        if (userData.role !== role) {
-            Swal.fire('Error', `Akun ini bukan sebagai ${role}`, 'error');
+
+        // Cek role cocok
+        if (userData.role !== selectedRole) {
+            showLoading(false);
+            Swal.fire('Login Gagal', `Akun ini terdaftar sebagai "${userData.role}", bukan "${selectedRole}"`, 'error');
             return;
         }
-        
-        if (userData.banned) {
-            Swal.fire('Akses Ditolak', 'Akun Anda telah diblokir', 'error');
-            return;
-        }
-        
-        // Login ke Firebase Auth (pakai email yang tersimpan)
-        const emailStored = userData.email;
-        const userCred = await auth.signInWithEmailAndPassword(emailStored, password);
-        
-        currentUser = userCred.user;
+        if (userData.banned) { showLoading(false); Swal.fire('Akses Ditolak', 'Akun Anda telah diblokir', 'error'); return; }
+
+        // Step 2: login Firebase Auth — email format: username@psas.local
+        const email = userData.email || `${username}@psas.local`;
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = cred.user;
         currentRole = userData.role;
-        
+
         // Catat log
-        await db.collection('logs').add({
-            userId: currentUser.uid,
-            username: username,
-            action: 'login',
-            role: userData.role,
-            timestamp: new Date()
-        });
-        
-        // Redirect berdasarkan role
+        db.collection('logs').add({
+            userId: currentUser.uid, username,
+            action: 'login', role: userData.role,
+            email: email,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(() => {});
+
+        showLoading(false);
+
         if (userData.role === 'admin') {
-            window.location.href = 'admin.html';
+            location.href = 'admin.html';
         } else if (userData.role === 'guru') {
-            showGuruPage();
+            showPage('guruPage');
+            loadGuruDashboard();
         } else {
-            showUserPage();
+            showPage('userPage');
+            loadUserDashboard();
         }
-        
-    } catch (error) {
-        Swal.fire('Login Gagal', 'Username atau password salah', 'error');
+    } catch(e) {
+        showLoading(false);
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+            Swal.fire('Login Gagal', 'Password salah', 'error');
+        } else {
+            Swal.fire('Login Gagal', e.message, 'error');
+        }
     }
 }
-    
-    async function logout() {
-        await auth.signOut();
-        sessionStorage.clear();
-        currentUser = null;
-        currentRole = null;
-        showLoginPage();
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-    }
-    
-    // ==================== USER DASHBOARD ====================
-    async function loadUserDashboard() {
-        if (!currentUser) return;
-        document.getElementById('userEmailDisplay').innerText = currentUser.email;
-        
-        // Load jadwal
-        const questions = await db.collection('questions').where('aktif', '==', true).get();
-        const schedules = new Map();
-        questions.forEach(doc => {
-            const q = doc.data();
-            const key = `${q.hari}_${q.mapel}_${q.kelas}`;
-            if (!schedules.has(key)) {
-                schedules.set(key, { hari: q.hari, mapel: q.mapel, kelas: q.kelas });
-            }
-        });
-        
-        const scheduleContainer = document.getElementById('scheduleList');
-        scheduleContainer.innerHTML = '';
-        for (const [_, schedule] of schedules) {
-            scheduleContainer.innerHTML += `
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div><span class="font-semibold">${schedule.hari}</span> - ${schedule.mapel} <span class="text-gray-500">(Kelas ${schedule.kelas})</span></div>
-                    <button onclick="previewQuestions('${schedule.mapel}', '${schedule.kelas}')" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-sm">Preview</button>
-                </div>
-            `;
-        }
-        
-        // Load mapel aktif dengan batasan
-        const settings = await db.collection('settings').doc('general').get();
-        const maxSubjects = settings.exists ? settings.data().maxSubjectsPerDay || 4 : 4;
-        
-        const subjects = new Map();
-        questions.forEach(doc => {
-            const q = doc.data();
-            if (!subjects.has(q.mapel)) {
-                subjects.set(q.mapel, { mapel: q.mapel, kelas: q.kelas, count: 0 });
-            }
-            subjects.get(q.mapel).count++;
-        });
-        
-        const subjectsContainer = document.getElementById('subjectsList');
-        subjectsContainer.innerHTML = '';
-        let i = 0;
-        for (const [_, subject] of subjects) {
-            if (i >= maxSubjects) break;
-            subjectsContainer.innerHTML += `
-                <div class="border rounded-lg p-4 hover:shadow-lg transition question-card">
-                    <div class="flex justify-between items-center">
-                        <div><h3 class="font-bold">${subject.mapel}</h3><p class="text-gray-600 text-sm">Kelas ${subject.kelas}</p><p class="text-xs text-gray-400">${subject.count} soal</p></div>
-                        <button onclick="previewQuestions('${subject.mapel}', '${subject.kelas}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">Preview</button>
-                    </div>
-                </div>
-            `;
-            i++;
-        }
-    }
-    
-    async function previewQuestions(mapel, kelas) {
-        const questions = await db.collection('questions')
-            .where('mapel', '==', mapel)
-            .where('kelas', '==', kelas)
-            .where('aktif', '==', true)
-            .orderBy('nomor')
-            .get();
-        
-        if (questions.empty) {
-            Swal.fire('Info', 'Belum ada soal untuk mapel ini', 'info');
-            return;
-        }
-        
-        document.getElementById('previewTitle').innerHTML = `Preview Soal - ${mapel} (Kelas ${kelas})`;
-        let content = '';
-        questions.forEach(doc => {
-            const q = doc.data();
-            content += `
-                <div class="border-b pb-4 mb-4">
-                    <div class="font-bold mb-2">Soal No. ${q.nomor}</div>
-                    <div class="mb-3">${q.text}</div>
-                    <div class="text-sm text-gray-600 mb-2">
-                        <span class="px-2 py-1 bg-gray-200 rounded">${q.type === 'pilihan_ganda' ? 'Pilihan Ganda' : 'Pilih Lebih Dari 1 Jawaban'}</span>
-                    </div>
-                    <div class="space-y-1 ml-4">
-                        <div>A. ${q.pilihan?.A || '-'}</div>
-                        <div>B. ${q.pilihan?.B || '-'}</div>
-                        <div>C. ${q.pilihan?.C || '-'}</div>
-                        <div>D. ${q.pilihan?.D || '-'}</div>
-                        <div>E. ${q.pilihan?.E || '-'}</div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        document.getElementById('previewContent').innerHTML = content;
-        document.getElementById('previewModal').classList.remove('hidden');
-        document.getElementById('previewModal').classList.add('flex');
-    }
-    
-    // ==================== GURU DASHBOARD ====================
-    async function loadGuruDashboard() {
-        if (!currentUser) return;
-        document.getElementById('guruEmailDisplay').innerText = currentUser.email;
-        
-        const questions = await db.collection('questions')
-            .where('aktif', '==', true)
-            .orderBy('mapel')
-            .orderBy('nomor')
-            .get();
-        
-        const container = document.getElementById('guruQuestionsList');
-        container.innerHTML = '';
-        
-        questions.forEach(doc => {
-            const q = doc.data();
-            container.innerHTML += `
-                <div class="border rounded-lg p-4 question-card">
-                    <div class="flex justify-between items-start flex-wrap gap-2">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2 flex-wrap">
-                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${q.mapel}</span>
-                                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">Kelas ${q.kelas}</span>
-                                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">No.${q.nomor}</span>
-                                <span class="text-xs ${q.type === 'pilihan_ganda' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'} px-2 py-1 rounded">${q.type === 'pilihan_ganda' ? 'Pilgan' : 'Multi Jawaban'}</span>
-                            </div>
-                            <div class="mt-2 font-medium">${q.text}</div>
-                            <div class="mt-3 ml-4 space-y-1 text-sm">
-                                <div>A. ${q.pilihan?.A || '-'}</div>
-                                <div>B. ${q.pilihan?.B || '-'}</div>
-                                <div>C. ${q.pilihan?.C || '-'}</div>
-                                <div>D. ${q.pilihan?.D || '-'}</div>
-                                <div>E. ${q.pilihan?.E || '-'}</div>
-                            </div>
-                            <div class="mt-3 text-sm text-green-700 bg-green-50 p-2 rounded">
-                                <i class="fas fa-key mr-1"></i> Jawaban Benar: ${q.jawaban?.join(', ') || '-'}
-                            </div>
+
+// ==================== LOGOUT ====================
+async function logout() {
+    if (unsubscribeGuest) { unsubscribeGuest(); unsubscribeGuest = null; }
+    await auth.signOut().catch(() => {});
+    sessionStorage.removeItem('psas_rules_accepted');
+    currentUser = null; currentRole = null;
+    showPage('loginPage');
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+}
+
+// ==================== LOADING ====================
+function showLoading(show) {
+    document.getElementById('loadingScreen').classList.toggle('hidden', !show);
+}
+
+// ==================== USER DASHBOARD (real-time) ====================
+function loadUserDashboard() {
+    if (!currentUser) return;
+    if (unsubscribeGuest) unsubscribeGuest();
+
+    // Real-time listener untuk soal aktif
+    unsubscribeGuest = db.collection('questions').where('aktif', '==', true)
+        .onSnapshot(async snap => {
+            const schedules = new Map();
+            const subjects = new Map();
+            snap.forEach(doc => {
+                const q = doc.data();
+                const sk = `${q.hari}|${q.mapel}|${q.kelas}`;
+                if (!schedules.has(sk)) schedules.set(sk, { hari: q.hari, mapel: q.mapel, kelas: q.kelas });
+                const mk = `${q.mapel}|${q.kelas}`;
+                if (!subjects.has(mk)) subjects.set(mk, { mapel: q.mapel, kelas: q.kelas, count: 0 });
+                subjects.get(mk).count++;
+            });
+
+            // Jadwal
+            const schedEl = document.getElementById('scheduleList');
+            if (schedules.size === 0) {
+                schedEl.innerHTML = '<p style="color:var(--text-3);font-size:14px;">Belum ada jadwal ujian aktif</p>';
+            } else {
+                schedEl.innerHTML = '';
+                for (const [_, s] of schedules) {
+                    const div = document.createElement('div');
+                    div.className = 'schedule-item';
+                    div.innerHTML = `
+                        <div>
+                            <span style="font-weight:700;font-size:14px;">${s.hari}</span>
+                            <span style="color:var(--text-2);font-size:14px;"> — ${s.mapel}</span>
+                            <span class="badge badge-blue" style="margin-left:6px;">Kelas ${s.kelas}</span>
                         </div>
-                    </div>
+                        <button onclick="openPreview('${s.mapel}','${s.kelas}')" 
+                            style="background:#4f46e5;color:white;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                            Preview
+                        </button>`;
+                    schedEl.appendChild(div);
+                }
+            }
+
+            // Subjects
+            const maxSubjects = await getMaxSubjects();
+            const subEl = document.getElementById('subjectsList');
+            subEl.innerHTML = '';
+            let count = 0;
+            for (const [_, s] of subjects) {
+                if (count >= maxSubjects) break;
+                const div = document.createElement('div');
+                div.className = 'card question-card';
+                div.style.cssText = 'padding:16px;cursor:default;';
+                div.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                        <div>
+                            <div style="font-weight:700;font-size:15px;">${s.mapel}</div>
+                            <div style="color:var(--text-2);font-size:13px;margin-top:2px;">Kelas ${s.kelas}</div>
+                            <div style="color:var(--text-3);font-size:12px;margin-top:2px;">${s.count} soal</div>
+                        </div>
+                        <button onclick="openPreview('${s.mapel}','${s.kelas}')"
+                            style="background:#059669;color:white;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                            Preview
+                        </button>
+                    </div>`;
+                subEl.appendChild(div);
+                count++;
+            }
+            if (count === 0) subEl.innerHTML = '<p style="color:var(--text-3);font-size:14px;">Belum ada mapel aktif</p>';
+        }, err => console.error('Listener error:', err));
+}
+
+async function getMaxSubjects() {
+    try {
+        const s = await db.collection('settings').doc('general').get();
+        return s.exists ? (s.data().maxSubjectsPerDay || 4) : 4;
+    } catch { return 4; }
+}
+
+async function openPreview(mapel, kelas) {
+    showLoading(true);
+    try {
+        const snap = await db.collection('questions')
+            .where('mapel', '==', mapel).where('kelas', '==', kelas).where('aktif', '==', true)
+            .orderBy('nomor').get();
+        showLoading(false);
+        if (snap.empty) { Swal.fire('Info', 'Belum ada soal untuk mapel ini', 'info'); return; }
+
+        document.getElementById('previewTitle').textContent = `Preview — ${mapel} (Kelas ${kelas})`;
+        const content = document.getElementById('previewContent');
+        content.innerHTML = '';
+        snap.forEach(doc => {
+            const q = doc.data();
+            const div = document.createElement('div');
+            div.style.cssText = 'border-bottom:1px solid var(--border);padding-bottom:16px;';
+            div.innerHTML = `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="background:#4f46e5;color:white;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">${q.nomor}</span>
+                    <span class="badge ${q.type==='pilihan_ganda'?'badge-green':'badge-orange'}">${q.type==='pilihan_ganda'?'Pilihan Ganda':'Multi Jawaban'}</span>
                 </div>
-            `;
+                <div style="font-size:15px;margin-bottom:10px;line-height:1.6;">${q.text}</div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px;">
+                    ${['A','B','C','D','E'].map(l => `<div style="font-size:14px;color:var(--text-2);"><strong>${l}.</strong> ${q.pilihan?.[l] || '-'}</div>`).join('')}
+                </div>`;
+            content.appendChild(div);
         });
-        
-        if (questions.empty) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada soal yang tersedia</div>';
+        document.getElementById('previewModal').classList.add('open');
+    } catch(e) { showLoading(false); Swal.fire('Error', e.message, 'error'); }
+}
+
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.remove('open');
+}
+
+// ==================== GURU DASHBOARD (real-time) ====================
+function loadGuruDashboard() {
+    if (!currentUser) return;
+    if (unsubscribeGuest) unsubscribeGuest();
+
+    unsubscribeGuest = db.collection('questions').where('aktif', '==', true)
+        .orderBy('mapel').orderBy('nomor')
+        .onSnapshot(snap => {
+            allGuruQuestions = [];
+            const mapelSet = new Set();
+            snap.forEach(doc => {
+                const q = { id: doc.id, ...doc.data() };
+                allGuruQuestions.push(q);
+                if (q.mapel) mapelSet.add(q.mapel);
+            });
+            // Update filter dropdown
+            const sel = document.getElementById('guruFilterMapel');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Semua Mapel</option>';
+            for (const m of [...mapelSet].sort()) {
+                const opt = document.createElement('option');
+                opt.value = m; opt.textContent = m;
+                if (m === current) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            filterGuru();
+        }, err => console.error('Guru listener:', err));
+}
+
+function filterGuru() {
+    const search = (document.getElementById('guruSearch')?.value || '').toLowerCase();
+    const mapelFilter = document.getElementById('guruFilterMapel')?.value || '';
+    const list = document.getElementById('guruQuestionsList');
+    list.innerHTML = '';
+
+    const filtered = allGuruQuestions.filter(q => {
+        if (mapelFilter && q.mapel !== mapelFilter) return false;
+        if (search) {
+            const hay = `${q.mapel} ${q.kelas} ${q.text} ${q.hari}`.toLowerCase();
+            if (!hay.includes(search)) return false;
         }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-3);font-size:14px;text-align:center;padding:24px;">Tidak ada soal ditemukan</p>';
+        return;
     }
-    
-    function closePreviewModal() {
-        document.getElementById('previewModal').classList.add('hidden');
-        document.getElementById('previewModal').classList.remove('flex');
+
+    filtered.forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'card question-card';
+        div.style.padding = '16px';
+        div.innerHTML = `
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+                <span class="badge badge-blue">${q.mapel}</span>
+                <span class="badge" style="background:var(--bg);color:var(--text-2);">Kelas ${q.kelas}</span>
+                <span class="badge badge-purple">No. ${q.nomor}</span>
+                <span class="badge ${q.type==='pilihan_ganda'?'badge-green':'badge-orange'}">${q.type==='pilihan_ganda'?'Pilgan':'Multi'}</span>
+                ${q.hari ? `<span class="badge" style="background:var(--bg);color:var(--text-2);">${q.hari}</span>` : ''}
+            </div>
+            <div style="font-size:15px;margin-bottom:10px;line-height:1.6;font-weight:500;">${q.text}</div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px;margin-bottom:10px;">
+                ${['A','B','C','D','E'].map(l => `<div style="font-size:14px;color:var(--text-2);"><strong>${l}.</strong> ${q.pilihan?.[l] || '-'}</div>`).join('')}
+            </div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;font-size:13px;color:#166534;font-weight:600;">
+                <i class="fas fa-key mr-2"></i>Jawaban Benar: ${q.jawaban?.join(', ') || '-'}
+            </div>`;
+        list.appendChild(div);
+    });
+}
+
+// ==================== INIT ====================
+function start() {
+    const rulesAccepted = sessionStorage.getItem('psas_rules_accepted');
+    if (rulesAccepted === 'true') {
+        document.getElementById('rulesModal').classList.add('hidden');
+        showPage('loginPage');
     }
-    
-    // ==================== INISIALISASI ====================
-    function checkRulesAndStart() {
-        const rulesAccepted = sessionStorage.getItem('psas_rules_accepted');
-        if (rulesAccepted === 'true') {
-            document.getElementById('rulesModal').style.display = 'none';
-            showLoginPage();
-        }
-    }
-    
-    // Start aplikasi
-    if (initFirebase()) {
-        checkRulesAndStart();
-    } else {
-        Swal.fire('Error', 'Gagal menginisialisasi Firebase. Hubungi administrator.', 'error');
-    }
+    // Cek apakah sudah login sebelumnya
+    auth.onAuthStateChanged(async user => {
+        if (!user) return;
+        const userDoc = await db.collection('users').doc(user.uid).get().catch(() => null);
+        if (!userDoc || !userDoc.exists) return;
+        const ud = userDoc.data();
+        if (ud.banned) { auth.signOut(); return; }
+        currentUser = user;
+        currentRole = ud.role;
+        if (ud.role === 'admin') { location.href = 'admin.html'; }
+        else if (ud.role === 'guru') { showPage('guruPage'); loadGuruDashboard(); }
+        else { showPage('userPage'); loadUserDashboard(); }
+    });
+}
+
+if (initFirebase()) start();
+else Swal.fire('Error', 'Gagal inisialisasi Firebase', 'error');
 </script>
 </body>
 </html>
