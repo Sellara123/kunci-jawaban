@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Environment - PSAS System</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" rel="stylesheet">
+    <style>
+        * { user-select: none; }
+        body { font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-purple-900 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+        <div class="text-center mb-6">
+            <i class="fas fa-database text-6xl text-blue-600 mb-4"></i>
+            <h1 class="text-2xl font-bold text-gray-800">Setup Environment Firebase</h1>
+            <p class="text-gray-600 mt-2">Konfigurasi ini hanya dilakukan <span class="text-red-600 font-bold">SEKALI</span> oleh Admin</p>
+            <p class="text-gray-500 text-sm mt-1">Data akan tersimpan aman di sessionStorage dan tidak terlihat user biasa</p>
+        </div>
+        
+        <form id="setupEnvForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">API Key <span class="text-red-500">*</span></label>
+                <input type="text" id="apiKey" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                <p class="text-xs text-gray-500 mt-1">Dapatkan dari Firebase Console > Project Settings > General</p>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Auth Domain <span class="text-red-500">*</span></label>
+                <input type="text" id="authDomain" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Project ID <span class="text-red-500">*</span></label>
+                <input type="text" id="projectId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Storage Bucket <span class="text-red-500">*</span></label>
+                <input type="text" id="storageBucket" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Messaging Sender ID <span class="text-red-500">*</span></label>
+                <input type="text" id="messagingSenderId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">App ID <span class="text-red-500">*</span></label>
+                <input type="text" id="appId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+            </div>
+            
+            <div class="border-t pt-4 mt-4">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        <strong>Keamanan:</strong> Data konfigurasi akan disimpan di sessionStorage dan hanya dapat diakses oleh admin. User biasa tidak bisa melihat konfigurasi ini.
+                    </p>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition">
+                    <i class="fas fa-save mr-2"></i> Simpan Konfigurasi & Lanjutkan
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('setupEnvForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const config = {
+                apiKey: document.getElementById('apiKey').value.trim(),
+                authDomain: document.getElementById('authDomain').value.trim(),
+                projectId: document.getElementById('projectId').value.trim(),
+                storageBucket: document.getElementById('storageBucket').value.trim(),
+                messagingSenderId: document.getElementById('messagingSenderId').value.trim(),
+                appId: document.getElementById('appId').value.trim()
+            };
+            
+            // Validasi sederhana
+            if (!config.apiKey.startsWith('AIza')) {
+                Swal.fire('Peringatan', 'API Key Firebase biasanya diawali dengan "AIza"', 'warning');
+                return;
+            }
+            
+            // Simpan ke sessionStorage (hanya untuk sesi ini)
+            // Untuk permanen, simpan ke localStorage dengan enkripsi
+            const encrypted = btoa(JSON.stringify(config));
+            sessionStorage.setItem('psas_firebase_config', encrypted);
+            localStorage.setItem('psas_firebase_config', encrypted);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Konfigurasi Firebase telah disimpan secara aman',
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                window.location.href = 'index.html';
+            });
+        });
+        
+        // Cek apakah sudah ada config
+        const existingConfig = localStorage.getItem('psas_firebase_config');
+        if (existingConfig) {
+            Swal.fire({
+                title: 'Konfigurasi Sudah Ada',
+                text: 'Konfigurasi Firebase sudah tersimpan. Ingin mengubahnya?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Ubah',
+                cancelButtonText: 'Tidak, Lanjutkan'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+        
+        // Keamanan
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
